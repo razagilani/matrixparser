@@ -5,4 +5,6 @@
 *.pyc
 *.swp
 *.log
+*.egg-info
+.cache
 __pycache__
