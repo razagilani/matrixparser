@@ -7,6 +7,12 @@ if [ -z $1 ]; then
     exit 1
 fi
 
+git_version_str=$(git --version | cut -d ' ' -f3)
+if [ ${git_version_str:0:1} -ne 2 ];
+then
+    echo "Invalid git version: $(git --version). Must be 2 or higher."
+    exit 1
+fi
 
 trap ctrl_c INT
 function ctrl_c() {
