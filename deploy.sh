@@ -17,19 +17,19 @@ function ctrl_c() {
 
 
 # Infer the developer's bitbucket username.
-hg_repo=`grep "default =" .hg/hgrc | cut -d'@' -f2`
-hg_username=`grep "username = " ~/.hgrc | cut -d'<' -f2 | cut -d'@' -f1`
-read -p "Enter password for Bitbucket user ${hg_username}: " -s hg_password
+git_repo=`grep "\s*url =" .git/config | cut -d'@' -f2 | tr ':' '/' | sed 's/.git$//'`
+bitbucket_username=`grep "name = " .git/config | cut -d'=' -f2 | tr -d ' '`
+read -p "Enter password for Bitbucket user ${bitbucket_username}: " -s password
 echo ""
 
 
 # Revision information.
 basepath=`pwd`
-current_branch=`hg branch`
-hg_rev=`hg id -i`
-hg_rev=`echo ${hg_rev} | tr -d '+'`
+current_branch=`git rev-parse --abbrev-ref HEAD`
+git_rev=`git rev-parse HEAD`
 
-if [[ "${hg_rev}" =~ "+" ]]; then
+git diff --quiet
+if [[ $? -ne 0 ]]; then
     echo "Uncommitted changes!"
     exit 3
 fi
@@ -38,7 +38,7 @@ fi
 # right and the revision exists.
 # wget prints the URL (including password) to stdout if it succeeds, so only
 # print the output if it failed
-output=$(wget --method=HEAD "https://$hg_username:$hg_password@$hg_repo/get/$hg_rev.zip" --no-verbose 2>&1)
+output=$(wget --method=HEAD "https://$bitbucket_username:${password}@${git_repo}/get/$git_rev.zip" --no-verbose 2>&1)
 if [[ $? != 0 ]]; then
     echo $output
     exit
@@ -47,7 +47,7 @@ fi
 
 # Do extra validation if pushing to prod.
 if [ "$1" == "prod" ]; then
-    read -n 1 -p "Deploy from ${hg_repo} branch ${current_branch} (y/n)?" repo_confirm
+    read -n 1 -p "Deploy from ${git_repo} branch ${current_branch} (y/n)?" repo_confirm
     echo ""
     
     if [ "${repo_confirm}" = "n" ]; then
@@ -60,7 +60,7 @@ if [ "$1" == "prod" ]; then
     if [ "${clobber_confirm}" = "y" ]; then
         secs=(5 4 3 2 1)
         for i in ${secs[@]}; do
-            echo -ne "Deploying branch ${current_branch} (rev ${hg_rev}) to PROD in ${i} ...   \r"
+            echo -ne "Deploying branch ${current_branch} (rev ${git_rev}) to PROD in ${i} ...   \r"
             sleep 1
         done
     
@@ -73,7 +73,7 @@ if [ "$1" == "prod" ]; then
 fi
 
 
-echo "Deploying revision ${hg_rev} on ${current_branch} ..."
+echo "Deploying revision ${git_rev} on ${current_branch} ..."
 
 cd deployment
-ansible-playbook -i $1 app.yml --extra-vars "revision=${hg_rev} hg_username=${hg_username} hg_password=${hg_password} hg_branch=${current_branch} hg_repo=${hg_repo}"
+ansible-playbook -i $1 app.yml --extra-vars "revision=${git_rev} hg_username=${bitbucket_username} hg_password=${password} hg_branch=${current_branch} hg_repo=${git_repo}"
