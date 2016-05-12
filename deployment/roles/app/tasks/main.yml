@@ -1,0 +1,42 @@
+---
+- name: Ensure logs directory exists in home
+  file: state=directory path=/home/{{ app_user }}/logs
+
+- name: Delete old code directory
+  file: path=/home/{{ app_user }}/{{ deploy_dir }} state=absent
+
+- name: Get zip file of code revision from Bitbucket
+  shell: wget https://{{ hg_username }}:{{ hg_password }}@{{ hg_repo }}/get/{{ revision }}.zip -O /home/{{ app_user }}/code.zip
+
+- name: Unzip code file
+  unarchive: src=/home/{{ app_user }}/code.zip dest=/home/{{ app_user }} copy=no
+
+- name: Rename code dir
+  shell: 'ls | grep "[a-zA-Z0-9]\+-[a-zA-Z0-9]\+-[a-zA-Z0-9]\+" | xargs -i mv {} {{ deploy_dir }}'
+
+- name: Create settings.cfg in repo home directory
+  template: src=roles/app/templates/settings-dev.cfg.template dest=/home/{{ app_user }}/{{ deploy_dir }}/settings.cfg
+
+- name: Ensure LibreOffice path is in PATH
+  lineinfile: "dest='/home/{{ app_user }}/.bashrc' line='export PATH=${PATH}:/opt/libreoffice5.1/program/' state=present "
+
+- name: Set receive_matrix_quotes script
+  template: src=roles/app/templates/receive_matrix_email.sh.template dest=/home/{{ app_user }}/receive_matrix_email.sh mode=0755
+
+- name: Create or recreate Python virtualenv
+  shell: rm -rf {{ virtualenv }} && /usr/local/bin/virtualenv {{ virtualenv }}
+
+- name: Activate virtualenv and install requirements
+  shell: . {{ virtualenv }}/bin/activate && pip install -U pip==1.5.6 && pip install -U setuptools==3.6 && cd ~/quote-parser && pip install --process-dependency-links -e .
+
+- name: Copy env_varssh to set important shell variables
+  template: src=roles/app/templates/env_vars.sh dest=/home/{{ app_user }}/env_vars.sh
+
+- name: Create log directory in home
+  file: path=/home/{{ app_user }}/logs state=directory
+
+- name: Add line to activate virtualenv in bashrc
+  lineinfile: dest=/home/{{ app_user }}/.bashrc line="source /home/{{ app_user }}/env_vars.sh"
+
+- name: Add deployment to deployment log
+  shell: echo `date` {{ hg_username }} {{ hg_repo }} {{ revision }} >> /home/{{ app_user }}/deployment_log

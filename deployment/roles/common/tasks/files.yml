@@ -1,0 +1,59 @@
+---
+#
+# Configure with the same RSA key each time.
+#
+- name: Ensure .ssh exists for {{ app_user }}
+  become: true
+  file: path=/home/{{ app_user }}/.ssh state=directory owner={{ app_user }}
+
+#
+# Web server
+#
+- name : Web server config file
+  become: true
+  template: src=roles/common/templates/nginx.conf dest=/etc/nginx/nginx.conf
+
+- name : init script for web server process
+  become: true
+  template: src=roles/common/templates/gunicorn_with_virtualenv.sh dest=/etc/init.d/gunicorn_with_virtualenv mode=744
+
+#
+# Configuration for postfix (receiving emails)
+#
+- name: Ensure /etc/postfix exists
+  become: true
+  file: path=/etc/postfix state=directory
+
+- name: Virtualmailboxes spool
+  become: true
+  file: path=/var/spool/mailboxes state=directory owner=virtualmail mode=0700
+
+- name: Copy postfix config
+  become: true
+  template: src=roles/common/templates/main.cf.template dest=/etc/postfix/main.cf
+
+- name: Make sure postfix has large max file size
+  become: true
+  lineinfile: 'dest=/etc/postfix/main.cf line="message_size_limit = 20480000"'
+
+- name: Copy aliases
+  become: true
+  lineinfile: 'dest=/etc/aliases line="{{ item }}: \"|/home/{{ app_user }}/receive_matrix_email.sh\""'
+  with_items:
+    - "matrix-champion"
+    - "matrix-amerigreen"
+    - "matrix-directenergy"
+    - "matrix-entrust"
+    - "matrix-majorenergy"
+    - "matrix-greateasternenergy"
+    - "matrix-usge"
+    - "matrix-constellation"
+    - "matrix-aep"
+    - "matrix-liberty"
+    - "matrix-usge-electric"
+    - "matrix-sfe"
+    - "matrix-volunteer"
+    - "matrix-guttmanenergy"
+    - "matrix-spark"
+    - "matrix-source"
+    - "matrix-suez"

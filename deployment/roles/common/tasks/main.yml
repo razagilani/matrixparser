@@ -1,0 +1,4 @@
+---
+- include: provision.yml
+- include: files.yml
+- include: services.yml

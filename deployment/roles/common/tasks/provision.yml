@@ -1,0 +1,55 @@
+---
+- name: Install necessary packages
+  become: true
+  yum: name={{ item }}
+  with_items:
+    - postfix
+    - freetds
+    - freetds-devel
+    - postgresql93-devel
+    - postgresql93-libs
+    - cups-libs
+    - python27-pip
+    - python27
+    - python27-devel
+    - python27-psycopg2
+    - libXinerama
+    - cairo-devel
+    - mercurial
+    - nginx
+
+- name: Install C compiler toolchain
+  become: true
+  shell: yum groupinstall "Development Tools" -y
+
+- name: Make python2.7 the default Python
+  become: true
+  shell: rm /usr/bin/python && ln -s /usr/bin/python2.7 /usr/bin/python 
+
+- name: Install virtualenv from pip
+  become: true
+  pip: name=virtualenv executable=pip-2.7
+
+- name: Copy LibreOffice installation script
+  become: true
+  template: src=roles/common/templates/install_ec2_libreoffice.sh dest=/tmp/ mode=0755
+
+- name: Check if LibreOffice already is installed
+  become: true
+  ignore_errors: true
+  shell: /opt/libreoffice5.1/program/soffice.bin --version
+  register: libre_version
+
+- name: Install LibreOffice from script
+  become: true
+  become_user: root
+  shell: /tmp/install_ec2_libreoffice.sh
+  when: libre_version|failed
+
+- name: Create matrix user
+  become: true
+  user: name=matrix uid=1999 createhome=yes
+
+- name: Create virtualmail user
+  become: true
+  user: name=virtualmail uid=9999 createhome=yes

@@ -1,0 +1,13 @@
+---
+- name: Install packages and configure box
+  hosts: all
+  remote_user: ec2-user
+  roles:
+    - common
+
+- name: Deploy code
+  hosts: all
+  become: true
+  become_user: "{{ app_user }}"
+  roles:
+    - app

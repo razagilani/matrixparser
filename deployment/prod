@@ -1,0 +1,9 @@
+[all]
+matrix-prod
+
+[all:vars]
+env = prod
+db_uri = postgresql://matrix_prod:BW}0(tn];IHY8KR}@postgres-prod.nextility.net/matrix_prod
+altitude_db_uri = mssql+pymssql://sa:Altitude3@sqlserver1-prod.nextility.net/Brokerage?charset=utf8
+google_client_id = 837434199649-asvo70lvdjddoleaj4l8nd0qf8ui8a5h.apps.googleusercontent.com
+google_client_secret = JboAwnMJ76yCZXFH8GWIzQNN
