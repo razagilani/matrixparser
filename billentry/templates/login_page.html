@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css"
+          href="ext/resources/css/ext-all-classic.css">
+    <title>Log in</title>
+
+    <style type="text/css">
+        body, html{
+            background: #fff !important;
+        }
+        .outerbox {
+            display: table;
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            top: 0px;
+            left: 0px;
+        }
+        .middlebox{
+            display: table-cell;
+            vertical-align: middle;
+        }
+        .innerbox {
+            margin-left: auto;
+            margin-right: auto;
+            width: 300px;
+        }
+        #oauthlink{
+            text-align: center;
+        }
+        #oauthlink a{
+            color: #00A4E4;
+            text-decoration: none;
+        }#oauthlink a:hover{
+            text-decoration: underline;
+        }
+        .flashmessages{
+            width: 100%;
+            min-height: 20px;
+            background: #E7C3C3;
+            color: #A94442;
+            border-radius: 5px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <p align="center">
+        <img src="images/NEXTILITY_LOGO.png" width='300' align="center">
+    </p>
+    <div class='outerbox'>
+        <div class="middlebox">
+            <div class="innerbox">
+                {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                    <div class="flashmessages">
+                    {% for message in messages %}
+                      <p>{{ message }}</p>
+                    {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+                <div id="loginform">
+
+                </div>
+                <div id="oauthlink">
+                    <h3>
+                        <a href="/login">Log in with your Nextility Google account</a>
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

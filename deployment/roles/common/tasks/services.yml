@@ -1,0 +1,21 @@
+---
+- name: Run newaliases
+  become: true
+  shell: newaliases
+
+- name: Restart postfix
+  become: true
+  service: name=postfix state=restarted
+
+- name: Enable postfix with chkconfig
+  become: true
+  shell: chkconfig --add postfix
+
+- name: ensure sendmail is of
+  become: true
+  service: name=sendmail state=stopped
+  # TODO: enabled=false to prevent starting on boot
+
+- name: Start/reload nginx
+  become: true
+  service: name=nginx state=reloaded enabled=true

@@ -1,0 +1,6 @@
+---
+virtualenv: matrix-virtualenv
+repo: ssh://hg@bitbucket.org/{{ hg_username }}/billing
+repo_https: https://hg@bitbucket.org/{{ hg_username }}/billing
+deploy_dir: quote-parser
+app_user: matrix

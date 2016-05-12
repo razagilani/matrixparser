@@ -1,0 +1,10 @@
+[all]
+matrix-dev
+
+[all:vars]
+env = dev
+db_uri = postgresql://matrix_dev:matrix_dev@postgres-dev.nextility.net/matrix_dev
+altitude_db_uri = mssql+pymssql://sa:Altitude3@localhost:1433/Brokerage_Development?charset=utf8
+google_client_id = 837434199649-0ab2m2a0dlnjfhvakj5u6liq7clfoph5.apps.googleusercontent.com
+google_client_secret = Rt_UjWWxyq_IOE-clyyk6XxI
+
