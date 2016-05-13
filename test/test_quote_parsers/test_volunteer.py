@@ -61,7 +61,6 @@ class TestCOH(VolunteerTest, TestCase):
         self.assertEqual(4.49 - 0.2, q.price)
 
 
-@skip("Needs coordinates for adder table that work")
 class TestCON(VolunteerTest, TestCase):
     FILE_NAME = 'volunteer/EXCHANGE_CON_2016 5-9-16.pdf'
 
