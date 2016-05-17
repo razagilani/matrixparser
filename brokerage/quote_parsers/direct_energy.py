@@ -53,7 +53,7 @@ class DirectEnergyMatrixParser(QuoteParser):
             r'(?P<low>\d+)\s*-\s*(?P<high>\d+)', fudge_high=True,
             fudge_block_size=5)
 
-        for row in xrange(self.QUOTE_START_ROW, self.reader.get_height(0)):
+        for row in xrange(self.QUOTE_START_ROW, self.reader.get_height(0) + 1):
             # TODO use time zone here
             start_from = excel_number_to_datetime(
                 self.reader.get(0, row, 0, (int, float)))
@@ -66,9 +66,8 @@ class DirectEnergyMatrixParser(QuoteParser):
             state = self.reader.get(0, row, self.STATE_COL, basestring)
             zone = self._reader.get(0, row, self.ZONE_COL, basestring)
             utility = self.reader.get(0, row, self.UTILITY_COL, basestring)
-            rate_class_alias = 'Direct-electric-%s' % '-'.join([state, utility, rate_class, zone])
-            rate_class_ids = self.get_rate_class_ids_for_alias(rate_class_alias)
-
+            rate_class_alias = 'Direct-electric-%s' % '-'.join(
+                [state, utility, rate_class, zone])
             special_options = self.reader.get(0, row, self.SPECIAL_OPTIONS_COL,
                                               basestring)
             _assert_true(special_options in ['', 'POR', 'UCB', 'RR'])
@@ -76,19 +75,12 @@ class DirectEnergyMatrixParser(QuoteParser):
             for col in xrange(self.PRICE_START_COL, self.PRICE_END_COL + 1):
                 min_vol, max_vol = volume_ranges[col - self.PRICE_START_COL]
                 price = self.reader.get(0, row, col, (int, float)) / 1000.
-                for rate_class_id in rate_class_ids:
-                    quote = MatrixQuote(
-                        start_from=start_from, start_until=start_until,
-                        term_months=term_months, valid_from=self._valid_from,
-                        valid_until=self._valid_until,
-                        min_volume=min_vol, limit_volume=max_vol,
-                        rate_class_alias=rate_class_alias,
-                        purchase_of_receivables=(special_options == 'POR'),
-                        price=price, service_type='electric',
-                        file_reference='%s %s,%s,%s' % (
-                            self.file_name, 0, row, col))
-                    # TODO: rate_class_id should be determined automatically
-                    # by setting rate_class
-                    if rate_class_id is not None:
-                        quote.rate_class_id = rate_class_id
-                    yield quote
+                yield MatrixQuote(start_from=start_from,
+                    start_until=start_until, term_months=term_months,
+                    valid_from=self._valid_from, valid_until=self._valid_until,
+                    min_volume=min_vol, limit_volume=max_vol,
+                    rate_class_alias=rate_class_alias,
+                    purchase_of_receivables=(special_options == 'POR'),
+                    price=price, service_type='electric',
+                    file_reference='%s %s,%s,%s' % (
+                        self.file_name, 0, row, col))
