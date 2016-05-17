@@ -23,6 +23,7 @@ class DirectEnergyMatrixParser(QuoteParser):
     UTILITY_COL = 'C'
     RATE_CLASS_COL = 'E'
     SPECIAL_OPTIONS_COL = 'F'
+    BILLING_METHOD_COL = 'G'
     TERM_COL = 'H'
     ZONE_COL = 3
     PRICE_START_COL = 8
@@ -69,8 +70,10 @@ class DirectEnergyMatrixParser(QuoteParser):
             rate_class_alias = 'Direct-electric-%s' % '-'.join(
                 [state, utility, rate_class, zone])
             special_options = self.reader.get(0, row, self.SPECIAL_OPTIONS_COL,
-                                              basestring)
-            _assert_true(special_options in ['', 'POR', 'UCB', 'RR'])
+                                              basestring).lower()
+            _assert_true(special_options in ['', 'por', 'ucb', 'rr'])
+            billing_method = self.reader.get(0, row, self.BILLING_METHOD_COL,
+                                             basestring).lower()
 
             for col in xrange(self.PRICE_START_COL, self.PRICE_END_COL + 1):
                 min_vol, max_vol = volume_ranges[col - self.PRICE_START_COL]
@@ -80,7 +83,7 @@ class DirectEnergyMatrixParser(QuoteParser):
                     valid_from=self._valid_from, valid_until=self._valid_until,
                     min_volume=min_vol, limit_volume=max_vol,
                     rate_class_alias=rate_class_alias,
-                    purchase_of_receivables=(special_options == 'POR'),
-                    price=price, service_type='electric',
-                    file_reference='%s %s,%s,%s' % (
+                    purchase_of_receivables='por' in special_options,
+                    dual_billing='dual' in billing_method, price=price,
+                    service_type='electric', file_reference='%s %s,%s,%s' % (
                         self.file_name, 0, row, col))
