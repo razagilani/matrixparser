@@ -146,18 +146,12 @@ class GEEGasNYParser(QuoteParser):
                 zip(prices_2, terms) + [(ss_price_2, ss_term_2)])
 
             for price, term in all_prices_and_terms:
-                for rate_class_id in self.get_rate_class_ids_for_alias(rca):
-                    quote = MatrixQuote(
-                        start_from=start_from, start_until=start_until,
-                        term_months=term, valid_from=self._valid_from,
-                        valid_until=self._valid_until, rate_class_alias=rca,
-                        price=price, service_type=GAS,
-                        # column not included in file reference because it's
-                        # hard to determine (even in intermediate CSV format)
-                        file_reference='%s %s,%s' % (self.file_name, 1, row))
-                    # TODO: rate_class_id should be determined automatically
-                    # by setting rate_class
-                    if rate_class_id is not None:
-                        quote.rate_class_id = rate_class_id
-                    yield quote
+                yield MatrixQuote(
+                    start_from=start_from, start_until=start_until,
+                    term_months=term, valid_from=self._valid_from,
+                    valid_until=self._valid_until, rate_class_alias=rca,
+                    price=price, service_type=GAS,
+                    # column not included in file reference because it's
+                    # hard to determine (even in intermediate CSV format)
+                    file_reference='%s %s,%s' % (self.file_name, 1, row))
 

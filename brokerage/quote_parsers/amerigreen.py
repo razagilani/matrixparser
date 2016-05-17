@@ -94,21 +94,12 @@ class AmerigreenMatrixParser(QuoteParser):
 
             price = self.reader.get(0, row, self.PRICE_COL, float) - broker_fee
 
-            for rate_class_id in self.get_rate_class_ids_for_alias(
-                    rate_class_alias):
-                quote = MatrixQuote(
-                    start_from=start_from, start_until=start_until,
-                    term_months=term_months, valid_from=self._valid_from,
-                    valid_until=self._valid_until,
-                    min_volume=min_volume, limit_volume=limit_volume,
-                    rate_class_alias=rate_class_alias,
-                    purchase_of_receivables=False, price=price,
-                    service_type='electric',
-                    file_reference='%s %s,%s,%s' % (
-                        self.file_name, 0, row, self.PRICE_COL))
-                # TODO: rate_class_id should be determined automatically
-                # by setting rate_class
-                if rate_class_id is not None:
-                    quote.rate_class_id = rate_class_id
-                yield quote
+            yield MatrixQuote(
+                start_from=start_from, start_until=start_until,
+                term_months=term_months, valid_from=self._valid_from,
+                valid_until=self._valid_until, min_volume=min_volume,
+                limit_volume=limit_volume, rate_class_alias=rate_class_alias,
+                purchase_of_receivables=False, price=price,
+                service_type='electric', file_reference='%s %s,%s,%s' % (
+                    self.file_name, 0, row, self.PRICE_COL))
 

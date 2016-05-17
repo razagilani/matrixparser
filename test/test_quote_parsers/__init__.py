@@ -48,7 +48,7 @@ class QuoteParserTest(object):
         dao.load_rate_class_aliases = Mock(
             return_value=defaultdict(lambda: [1]))
 
-        cls.parser = cls.PARSER_CLASS(brokerage_dao=dao)
+        cls.parser = cls.PARSER_CLASS()
         assert cls.parser.get_count() == 0
 
         with open(join(DIRECTORY, cls.FILE_NAME), 'rb') as spreadsheet:

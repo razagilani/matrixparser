@@ -43,18 +43,10 @@ class AgeraMatrixParser(QuoteParser):
             term = self.reader.get(self.SHEET, row, self.TERM_COL, int)
             price = self.reader.get(self.SHEET, row, self.PRICE_COL,
                                     (float, int))
-            rate_class_ids = self.get_rate_class_ids_for_alias(rate_class_alias)
-            for rate_class_id in rate_class_ids:
-                quote = MatrixQuote(
-                    start_from=start_from, start_until=start_until,
-                    term_months=term, valid_from=self._valid_from,
-                    valid_until=self._valid_until,
-                    rate_class_alias=rate_class_alias, price=price,
-                    service_type=ELECTRIC, file_reference='%s %s,%s,%s' % (
-                        self.file_name, self.SHEET, row, self.PRICE_COL))
-                # TODO: rate_class_id should be determined automatically
-                # by setting rate_class
-                if rate_class_id is not None:
-                    quote.rate_class_id = rate_class_id
-                print quote
-                yield quote
+            yield MatrixQuote(
+                start_from=start_from, start_until=start_until,
+                term_months=term, valid_from=self._valid_from,
+                valid_until=self._valid_until,
+                rate_class_alias=rate_class_alias, price=price,
+                service_type=ELECTRIC, file_reference='%s %s,%s,%s' % (
+                    self.file_name, self.SHEET, row, self.PRICE_COL))
