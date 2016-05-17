@@ -51,8 +51,8 @@ class VolunteerMatrixParser(QuoteParser):
     # invisible text that we're ignoring, so we only get 3 prices per file.
     PRICE_COLS = [
         189,
-        #386,
-        #456,
+        341,
+        482,
     ]
 
     # compromise values that work for all files except CON
@@ -116,7 +116,7 @@ class VolunteerMatrixParser(QuoteParser):
 
         start_month_name, start_year = self._reader.get_matches(
             1, self.START_ROW, self.START_COL,
-            '(?:Start\s+Month\s+)?(Jun)-(2016)\s*', (str, int))
+            '([A-Za-z]+)-(\d{4})\s*', (str, int))
         start_month = next(i for i, abbr in enumerate(calendar.month_abbr)
                            if abbr == start_month_name)
         start_from = datetime(start_year, start_month, 1)
