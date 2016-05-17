@@ -85,7 +85,8 @@ def main(parser_name, example_file_paths):
         m = re.match('^(\s+)FILE_NAME = ', line)
         if m:
             test_lines[i] = "%sFILE_NAME = '%s'" % (
-                m.group(1), basename(example_file_paths[j]))
+                m.group(1),
+                join(subdirectory_path, basename(example_file_paths[j])))
             j += 1
     with open(test_file_path, 'w') as test_file:
         test_file.write('\n'.join(test_lines))
