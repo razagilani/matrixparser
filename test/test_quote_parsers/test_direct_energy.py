@@ -27,6 +27,13 @@ class TestDirectEnergy(QuoteParserTest, TestCase):
         self.assertEqual(q.limit_volume, 75000)
         self.assertEqual('Direct-electric-CT-CLP-37, R35--', q.rate_class_alias)
         self.assertEqual(q.price, .07036)
+        self.assertTrue(q.dual_billing)
+        self.assertFalse(q.purchase_of_receivables)
+
+    def test_por(self):
+        # this is the first quote that has "POR"
+        q = self.quotes[31]
+        self.assertTrue(q.purchase_of_receivables)
 
     def test_last(self):
         q = self.quotes[-1]
@@ -37,3 +44,5 @@ class TestDirectEnergy(QuoteParserTest, TestCase):
         self.assertEqual(q.limit_volume, 1e6)
         self.assertEqual('Direct-electric-RI-NECO-S00--', q.rate_class_alias)
         self.assertEqual(q.price, .08628)
+        self.assertFalse(q.dual_billing)
+        self.assertFalse(q.purchase_of_receivables)
