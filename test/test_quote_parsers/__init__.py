@@ -42,15 +42,8 @@ class QuoteParserTest(object):
     def setUpClass(cls):
         """Shared setup for all QuoteParsers.
         """
-        # this mock replaces the brokerage.brokerate_model module to avoid
-        # accessing the database
-        dao = Mock()
-        dao.load_rate_class_aliases = Mock(
-            return_value=defaultdict(lambda: [1]))
-
         cls.parser = cls.PARSER_CLASS()
         assert cls.parser.get_count() == 0
-
         with open(join(DIRECTORY, cls.FILE_NAME), 'rb') as spreadsheet:
             cls.parser.load_file(spreadsheet, cls.FILE_NAME, cls.MATRIX_FORMAT)
         cls.quotes = cls.get_quote_list()
