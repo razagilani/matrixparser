@@ -6,7 +6,7 @@ import pkgutil
 import re
 import shutil
 from importlib import import_module
-from os.path import join, basename, splitext
+from os.path import join, basename, splitext, dirname
 from subprocess import check_call
 
 import click
@@ -53,10 +53,13 @@ def main(parser_name, example_file_paths):
     # but it doesn't matter--any test should be able to go with any file
 
     for test_class, example_file_path in zip(test_classes, example_file_paths):
-        # replace old example file with new one
+        # replace old example file with new one. subdirectory_path will be
+        # empty unless the file is inside a subdirectory of QUOTE_FILES_DIR
         old_example_file_path = join(QUOTE_FILES_DIR, test_class.FILE_NAME)
+        subdirectory_path = dirname(test_class.FILE_NAME)
         new_example_file_name = basename(example_file_path)
-        new_example_file_path = join(QUOTE_FILES_DIR, new_example_file_name)
+        new_example_file_path = join(QUOTE_FILES_DIR, subdirectory_path,
+                                     new_example_file_name)
         shutil.copy(example_file_path, new_example_file_path)
         for command in ('git add "%s"' % new_example_file_path,
                         'git rm "%s"' % old_example_file_path):
