@@ -55,24 +55,14 @@ class GuttmanElectric(QuoteParser):
             for price_col in xrange(col + 2, col + 2 + self.NO_OF_TERM_COLS):
                 term = self._reader.get(sheet, term_row, price_col, int)
                 price = self._reader.get(sheet, table_row, price_col, float)
-                rate_class_ids = self.get_rate_class_ids_for_alias(
-                    rate_class_alias)
-                for rate_class_id in rate_class_ids:
-                    quote = MatrixQuote(
-                        start_from=start_from, start_until=start_until,
-                        term_months=term, valid_from=valid_from,
-                        valid_until=valid_until,
-                        min_volume=min_volume,
-                        limit_volume=limit_volume,
-                        purchase_of_receivables=False, price=price,
-                        rate_class_alias=rate_class_alias,
-                        service_type=ELECTRIC,
-                        file_reference='%s %s,%s' % (
-                            self.file_name, sheet, table_row))
-                    # TODO: rate_class_id should be determined automatically
-                    # by setting rate_class
-                    quote.rate_class_id = rate_class_id
-                    yield quote
+                yield MatrixQuote(start_from=start_from,
+                    start_until=start_until, term_months=term,
+                    valid_from=valid_from, valid_until=valid_until,
+                    min_volume=min_volume, limit_volume=limit_volume,
+                    purchase_of_receivables=False, price=price,
+                    rate_class_alias=rate_class_alias, service_type=ELECTRIC,
+                    file_reference='%s %s,%s' % (
+                        self.file_name, sheet, table_row))
 
 
     def _extract_quotes(self):

@@ -74,18 +74,11 @@ class SourceMatrixParser(QuoteParser):
                 price = self.reader.get_matches(self.SHEET, row, col,
                                                 r'\s*\$?(.+)\s*', float)
 
-                for rate_class_id in self.get_rate_class_ids_for_alias(
-                        rate_class_alias):
-                    quote = MatrixQuote(
-                        start_from=start_from, start_until=start_until,
-                        term_months=term, valid_from=valid_from,
-                        valid_until=valid_from + timedelta(days=1),
-                        min_volume=min_vol, limit_volume=limit_vol,
-                        rate_class_alias=rate_class_alias,
-                        price=price, service_type='electric',
-                        file_reference='%s %s,%s' % (self.file_name, row, col))
-                    # TODO: rate_class_id should be determined automatically
-                    # by setting rate_class
-                    if rate_class_id is not None:
-                        quote.rate_class_id = rate_class_id
-                    yield quote
+                yield MatrixQuote(
+                    start_from=start_from, start_until=start_until,
+                    term_months=term, valid_from=valid_from,
+                    valid_until=valid_from + timedelta(days=1),
+                    min_volume=min_vol, limit_volume=limit_vol,
+                    rate_class_alias=rate_class_alias,
+                    price=price, service_type='electric',
+                    file_reference='%s %s,%s' % (self.file_name, row, col))

@@ -130,7 +130,6 @@ class SFEMatrixParser(QuoteParser):
                                          basestring)
             rate_class_alias = 'SFE-' + ('electric' if service_type == 'Elec' else 'gas') + \
                 '-%s' % '-'.join([state, rate_class])
-            rate_class_ids = self.get_rate_class_ids_for_alias(rate_class_alias)
 
             # volume range can have different format in each row, and the
             # energy unit depends on both the format of the row and the
@@ -189,25 +188,17 @@ class SFEMatrixParser(QuoteParser):
                         'Price at (%s, %s) has unexpected type %s: "%s"' % (
                             row, col, type(price), price))
 
-                for rate_class_id in rate_class_ids:
-                    quote = MatrixQuote(
-                        start_from=start_from, start_until=start_until,
-                        term_months=term, valid_from=valid_from,
-                        valid_until=valid_until, min_volume=min_vol,
-                        limit_volume=limit_vol,
-                        rate_class_alias=rate_class_alias,
-                        purchase_of_receivables=False, price=price,
-                        service_type={
-                            self._GAS: 'gas',
-                            self._ELECTRIC: 'electric'
-                        }[service_type],
-                        file_reference='%s %s,%s,%s' % (self.file_name, 0, row,
+                yield MatrixQuote(
+                    start_from=start_from, start_until=start_until,
+                    term_months=term, valid_from=valid_from,
+                    valid_until=valid_until, min_volume=min_vol,
+                    limit_volume=limit_vol, rate_class_alias=rate_class_alias,
+                    purchase_of_receivables=False, price=price,
+                    service_type={
+                        self._GAS: 'gas',
+                        self._ELECTRIC: 'electric'
+                    }[service_type],
+                    file_reference='%s %s,%s,%s' % (self.file_name, 0, row,
                                                      col))
-                    # TODO: rate_class_id should be determined automatically
-                    # by setting rate_class
-                    if rate_class_id is not None:
-                        quote.rate_class_id = rate_class_id
-                    yield quote
-
             last_unit_factor = high_unit_factor
 

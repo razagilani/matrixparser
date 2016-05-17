@@ -32,17 +32,8 @@ class QuoteParserTest(TestCase):
             NAME = 'example'
             reader = Mock()
             def __init__(self):
-                super(ExampleQuoteParser, self).__init__(
-                    brokerage_dao=Mock(
-                        load_rate_class_aliases=Mock(
-                            return_value=defaultdict(lambda: [1]))))
+                super(ExampleQuoteParser, self).__init__()
                 self.reader = reader
-
-            def _load_rate_class_aliases(self):
-                # avoid use of database in this test by overriding this method
-                # where a database query is made. TODO better way to do this
-                return []
-
             def _extract_quotes(self):
                 pass
 
@@ -114,26 +105,7 @@ class MatrixQuoteParsersTest(TestCase):
 
     def setUp(self):
         clear_db()
-
-        aliases = [
-            # Champion
-            'Champion-electric-PA-DQE-GS-General service',
-
-            # Entrust
-            'Entrust-electric-Com Ed',
-            'Entrust-electric-ConEd Zone J',
-
-            # Volunteer
-            'Volunteer-gas-COLUMBIA GAS of OHIO (COH)',
-
-            # Spark
-            'NJ-PSEG-PSEG-GLP'
-        ]
         session = AltitudeSession()
-        session.flush()
-        # session.add_all(
-        #     [RateClassAlias(rate_class_id=self.rate_class.rate_class_id,
-        #                     rate_class_alias=a) for a in aliases])
         session.flush()
 
     def tearDown(self):

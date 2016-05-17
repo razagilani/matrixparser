@@ -99,23 +99,9 @@ class GuttmanGas(QuoteParser):
             elif isinstance(price, float) and unit=='MCF':
                 # the unit is $/mcf
                 price /= 10.
-            rate_class_ids = self.get_rate_class_ids_for_alias(
-                rate_class_alias)
-            for rate_class_id in rate_class_ids:
-                quote = MatrixQuote(
-                    start_from=start_from, start_until=start_until,
-                    term_months=int(term), valid_from=valid_from,
-                    valid_until=valid_until,
-                    min_volume=min_volume,
-                    limit_volume=limit_volume,
-                    purchase_of_receivables=False, price=price,
-                    rate_class_alias=rate_class_alias,
-                    service_type='gas')
-                # TODO: rate_class_id should be determined automatically
-                # by setting rate_class
-                quote.rate_class_id = rate_class_id
-                yield quote
-
-
-
-
+            yield MatrixQuote(start_from=start_from,
+                start_until=start_until, term_months=int(term),
+                valid_from=valid_from, valid_until=valid_until,
+                min_volume=min_volume, limit_volume=limit_volume,
+                purchase_of_receivables=False, price=price,
+                rate_class_alias=rate_class_alias, service_type='gas')

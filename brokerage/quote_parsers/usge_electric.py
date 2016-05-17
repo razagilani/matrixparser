@@ -114,9 +114,6 @@ class USGEElectricMatrixParser(QuoteParser):
                     zone = ""
                 rate_class_alias = 'USGE-electric-%s' % '-'.join(
                         [ldc, customer_type, rate_class, zone])
-                rate_class_ids = self.get_rate_class_ids_for_alias(
-                    rate_class_alias)
-
                 min_volume, limit_volume = self._extract_volume_range(
                     sheet, row, self.VOLUME_RANGE_COL)
 
@@ -148,19 +145,14 @@ class USGEElectricMatrixParser(QuoteParser):
                         if price is None or price in ('', 'N/A', 'NA'):
                             continue
 
-                        for rate_class_id in rate_class_ids:
-                            quote = MatrixQuote(
-                                start_from=start_from, start_until=start_until,
-                                term_months=term, valid_from=valid_from,
-                                valid_until=valid_until,
-                                min_volume=min_volume,
-                                limit_volume=limit_volume,
-                                purchase_of_receivables=False, price=price,
-                                rate_class_alias=rate_class_alias,
-                                service_type='electric',
-                                file_reference='%s %s,%s,%s' % (
-                                    self.file_name, sheet, row, i))
-                            # TODO: rate_class_id should be determined automatically
-                            # by setting rate_class
-                            quote.rate_class_id = rate_class_id
-                            yield quote
+                        yield MatrixQuote(
+                            start_from=start_from, start_until=start_until,
+                            term_months=term, valid_from=valid_from,
+                            valid_until=valid_until,
+                            min_volume=min_volume,
+                            limit_volume=limit_volume,
+                            purchase_of_receivables=False, price=price,
+                            rate_class_alias=rate_class_alias,
+                            service_type='electric',
+                            file_reference='%s %s,%s,%s' % (
+                                self.file_name, sheet, row, i))

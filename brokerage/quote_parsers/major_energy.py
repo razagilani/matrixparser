@@ -74,7 +74,6 @@ class MajorEnergyElectricSheetParser(QuoteParser):
                 zone = ''
             rate_class_alias_parts = ['electric', state, utility, zone]
             rate_class_alias = 'Major-%s' % '-'.join(rate_class_alias_parts)
-            rate_class_ids = self.get_rate_class_ids_for_alias(rate_class_alias)
 
             term_months = self.reader.get(self.SHEET, row, self.TERM_COL, int)
 
@@ -83,22 +82,14 @@ class MajorEnergyElectricSheetParser(QuoteParser):
                 # (this could be done one instead of in a loop)
                 min_vol, max_vol = volume_ranges[col - self.PRICE_START_COL]
                 price = self.reader.get(self.SHEET, row, col, (int, float))
-                for rate_class_id in rate_class_ids:
-                    quote = MatrixQuote(
-                        start_from=start_from, start_until=start_until,
-                        term_months=term_months, valid_from=self._valid_from,
-                        valid_until=self._valid_until,
-                        min_volume=min_vol, limit_volume=max_vol,
-                        purchase_of_receivables=False,
-                        rate_class_alias=rate_class_alias, price=price,
-                        service_type='electric',
-                        file_reference='%s %s,%s,%s' % (
-                            self.file_name, self.SHEET, row, col))
-                    # TODO: rate_class_id should be determined automatically
-                    # by setting rate_class
-                    if rate_class_id is not None:
-                        quote.rate_class_id = rate_class_id
-                    yield quote
+                yield MatrixQuote(
+                    start_from=start_from, start_until=start_until,
+                    term_months=term_months, valid_from=self._valid_from,
+                    valid_until=self._valid_until, min_volume=min_vol,
+                    limit_volume=max_vol, purchase_of_receivables=False,
+                    rate_class_alias=rate_class_alias, price=price,
+                    service_type='electric', file_reference='%s %s,%s,%s' % (
+                        self.file_name, self.SHEET, row, col))
 
 
 class MajorEnergyGasSheetParser(QuoteParser):
@@ -141,7 +132,6 @@ class MajorEnergyGasSheetParser(QuoteParser):
                                       basestring)
             rate_class_alias_parts = ['gas', utility]
             rate_class_alias = 'Major-%s' % '-'.join(rate_class_alias_parts)
-            rate_class_ids = self.get_rate_class_ids_for_alias(rate_class_alias)
 
             for col in self.reader.column_range(
                     self.PRICE_START_COL, self.reader.get_width(self.SHEET), inclusive=False):
@@ -160,22 +150,16 @@ class MajorEnergyGasSheetParser(QuoteParser):
                     continue
                 _assert_true(isinstance(price, (float, int)))
 
-                for rate_class_id in rate_class_ids:
-                    quote = MatrixQuote(
-                        start_from=start_from, start_until=start_until,
-                        term_months=term_months, valid_from=self._valid_from,
-                        valid_until=self._valid_until,
-                        # hard-coded volume range values come from email body
-                        min_volume=0, limit_volume=50000,
-                        purchase_of_receivables=False,
-                        rate_class_alias=rate_class_alias, price=price,
-                        service_type='gas', file_reference='%s,%s,%s' % (
-                            self.SHEET, row, col))
-                    # todo: rate_class_id should be determined automatically
-                    # by setting rate_class
-                    if rate_class_id is not None:
-                        quote.rate_class_id = rate_class_id
-                    yield quote
+                yield MatrixQuote(
+                    start_from=start_from,
+                    start_until=start_until, term_months=term_months,
+                    valid_from=self._valid_from, valid_until=self._valid_until,
+                    # hard-coded volume range values come from email body
+                    min_volume=0, limit_volume=50000,
+                    purchase_of_receivables=False,
+                    rate_class_alias=rate_class_alias, price=price,
+                    service_type='gas',
+                    file_reference='%s,%s,%s' % (self.SHEET, row, col))
 
 
 class MajorEnergyMatrixParser(QuoteParser):
