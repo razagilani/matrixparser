@@ -50,46 +50,48 @@ class DirectPortalMatrixParser(QuoteParser):
                                basestring) == 'NEST':
                 continue
 
+            # different volume limits and interpretation of price unit for
+            # electric and gas quotes. also different gas quotes have
+            # different units.
             commodity = self.reader.get(0, row, 'A', basestring).lower()
             unit_name = self.reader.get(0, row, self.UNIT_COL,
                                         basestring).lower()
             if commodity == 'power':
+                service_type = ELECTRIC
                 _assert_equal(unit_name, 'kwh')
-                service_type, unit = ELECTRIC, unit_registry.kWh
+                expected_unit = target_unit = unit_registry.kWh
                 min_vol, limit_vol = 0, 750000
             elif commodity == 'gas':
                 service_type = GAS
                 if unit_name in ('thm', 'ccf'):
-                    unit = unit_registry.therm
+                    expected_unit = unit_registry.therm
                 elif unit_name == 'mcf':
-                    unit = unit_registry.therm * 10
+                    expected_unit = unit_registry.therm * 10
                 else:
                     raise ValidationError('Unknown gas unit: "%s"' % unit_name)
+                target_unit = unit_registry.therm
                 min_vol, limit_vol = 0, 150000
             else:
                 raise ValidationError(
                     'Expected service type "power" or "gas", found "%s"' %
                     commodity)
-            # TODO: what is done with unit?
 
             rca_prefix = 'Direct Energy Small Business-' + service_type.lower()
             rca = '-'.join([rca_prefix] + [
                 str(self.reader.get(0, row, col, object)) for col in
                 self.RCA_COLS])
             term = self.reader.get(0, row, self.TERM_COL, int)
-            price = self.reader.get(0, row, self.PRICE_COL, float)
+            price = self.reader.get(0, row, self.PRICE_COL, float) * \
+                    target_unit / expected_unit
 
             # all TODO
             start_from = datetime(2000, 1, 1)
             start_until = datetime(2000, 1, 2)
 
-            q = MatrixQuote(
+            yield MatrixQuote(
                 start_from=start_from, start_until=start_until,
                 term_months=term, valid_from=self._valid_from,
                 valid_until=self._valid_until, min_volume=min_vol,
                 limit_volume=limit_vol, rate_class_alias=rca, price=price,
-                service_type=service_type,
-                file_reference='%s %s,%s,%s' % (self.file_name, 0, row,
-                                                self.PRICE_COL))
-            print q
-            yield q
+                service_type=service_type, file_reference='%s %s,%s,%s' % (
+                    self.file_name, 0, row, self.PRICE_COL))
