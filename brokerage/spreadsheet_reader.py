@@ -2,7 +2,7 @@
 """
 from tablib import formats, Databook, Dataset
 
-from brokerage.exceptions import BillingError, ValidationError
+from brokerage.exceptions import MatrixError, ValidationError
 from brokerage.reader import Reader
 
 
@@ -75,7 +75,7 @@ class SpreadsheetReader(Reader):
             file_format.import_set(dataset, quote_file.read(), headers=True)
             result.add_sheet(dataset)
         else:
-            raise BillingError('Unknown format: %s' % format.__name__)
+            raise MatrixError('Unknown format: %s' % format.__name__)
         return result
 
     def __init__(self, file_format):

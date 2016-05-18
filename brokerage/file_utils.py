@@ -5,12 +5,12 @@ from zipfile import ZipFile
 
 from testfixtures import TempDirectory
 
-from brokerage.exceptions import BillingError
+from brokerage.exceptions import MatrixError
 from brokerage import ROOT_PATH
 from util.shell import shell_quote, run_command_in_shell
 
 
-class PreprocessingError(BillingError):
+class PreprocessingError(MatrixError):
     """Error related to pre-processing a file before getting quotes from it.
     """
 
@@ -117,7 +117,7 @@ class TabulaConverter(Converter):
 
 def extract_zip(fp):
     """
-    Extract a file from a zip archive. Raise BillingError if there is not
+    Extract a file from a zip archive. Raise MatrixError if there is not
     exactly one file in the zip.
     :param fp: input zip file
     :return: unzipped file, opened in "r" mode
