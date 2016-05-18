@@ -1,10 +1,10 @@
-class BillingError(Exception):
+class MatrixError(Exception):
     """Generic error class."""
 
 
-class DatabaseError(BillingError):
+class DatabaseError(MatrixError):
     """Raised when we have a database-related problem"""
 
 
-class ValidationError(BillingError):
+class ValidationError(MatrixError):
     pass
