@@ -1,6 +1,7 @@
 """This module should contain subclasses of QuoteParser for specific
 suppliers, each one in a separate file.
 """
+from brokerage.quote_parsers.direct_portal import DirectPortalMatrixParser
 from brokerage.quote_parsers.source import SourceMatrixParser
 from .aep import AEPMatrixParser
 from .amerigreen import AmerigreenMatrixParser
@@ -46,5 +47,6 @@ CLASSES_FOR_FORMATS = {
     21: GEEGasNJParser,
     22: SourceMatrixParser,
     23: SuezElectricParser,
+    24: DirectPortalMatrixParser,
 }
 
