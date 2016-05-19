@@ -15,7 +15,7 @@
   shell: 'ls | grep "[a-zA-Z0-9]\+-[a-zA-Z0-9]\+-[a-zA-Z0-9]\+" | xargs -i mv {} {{ deploy_dir }}'
 
 - name: Create settings.cfg in repo home directory
-  template: src=roles/app/templates/settings-dev.cfg.template dest=/home/{{ app_user }}/{{ deploy_dir }}/settings.cfg
+  template: src=roles/app/templates/settings.cfg.template dest=/home/{{ app_user }}/{{ deploy_dir }}/settings.cfg
 
 - name: Ensure LibreOffice path is in PATH
   lineinfile: "dest='/home/{{ app_user }}/.bashrc' line='export PATH=${PATH}:/opt/libreoffice5.1/program/' state=present "

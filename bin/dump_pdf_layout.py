@@ -17,6 +17,7 @@ def main(file_path, round_coordinates=False):
     with open(file_path) as pdf_file:
         pages = PDFUtil().get_pdfminer_layout(pdf_file)
 
+    print 'x0,y0 x1,y1'
     for i, page in enumerate(pages):
         print 'page', i + 1
         for element in page:

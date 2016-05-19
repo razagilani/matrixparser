@@ -30,7 +30,7 @@ from billentry import admin
 from billentry.billentry_model import BillEntryUser, Role, BEUserSession
 from billentry.common import get_bcrypt_object
 from brokerage.model import Session
-from brokerage.model import init_config
+from brokerage import init_config
 
 LOG_NAME = 'billentry'
 

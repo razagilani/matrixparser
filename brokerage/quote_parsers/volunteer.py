@@ -51,8 +51,8 @@ class VolunteerMatrixParser(QuoteParser):
     # invisible text that we're ignoring, so we only get 3 prices per file.
     PRICE_COLS = [
         189,
-        #386,
-        #456,
+        341,
+        482,
     ]
 
     # compromise values that work for all files except CON
@@ -116,7 +116,7 @@ class VolunteerMatrixParser(QuoteParser):
 
         start_month_name, start_year = self._reader.get_matches(
             1, self.START_ROW, self.START_COL,
-            '(?:Start\s+Month\s+)?(Jun)-(2016)\s*', (str, int))
+            '([A-Za-z]+)-(\d{4})\s*', (str, int))
         start_month = next(i for i, abbr in enumerate(calendar.month_abbr)
                            if abbr == start_month_name)
         start_from = datetime(start_year, start_month, 1)
@@ -125,10 +125,18 @@ class VolunteerMatrixParser(QuoteParser):
         # extract adders from the "Fixed" column of the small adder table at
         # the bottom. each row of prices has a corresponding adder which
         # should be subtracted from the price shown to get the real price.
-        adders = [self.reader.get_matches(
-            1, row, self.ADDER_COL, self.PRICE_PATTERN, float, tolerance=20)
-                  for row in self.ADDER_ROWS]
-        _assert_equal(3, len(adders))
+        # make sure the 3 boxes are distinct because layout variations can make
+        # box 1 and box 2 both the closest to expected coordinate 1, etc.
+        # if this technique needs to be used anywhere else, turn it into a
+        # method of PDFReader.
+        adder_elements = []
+        for row in self.ADDER_ROWS:
+            all_elements = self.reader._find_matching_elements(
+                1, row, self.ADDER_COL, self.PRICE_PATTERN)
+            closest_element_not_already_picked = next(
+                e for e in all_elements if e not in adder_elements)
+            adder_elements.append(closest_element_not_already_picked)
+        adders = [float(e.get_text().strip()) for e in adder_elements]
         if any(a == b for a, b in zip(adders, adders[1:])):
             raise ValidationError('Expected 3 different adders but some were '
                                   'the same: %s' % adders)

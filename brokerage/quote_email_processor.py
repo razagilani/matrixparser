@@ -9,7 +9,7 @@ import statsd
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from brokerage.model import Company
-from brokerage.exceptions import BillingError, ValidationError
+from brokerage.exceptions import MatrixError, ValidationError
 from brokerage.model import AltitudeSession, Session, Supplier, Company
 from util.email_util import get_attachments
 
@@ -21,7 +21,7 @@ LOG_NAME = 'read_quotes'
 QUOTE_METRIC_FORMAT = 'quote.matrix.%(suppliername)s'
 EMAIL_METRIC_NAME = 'quote.email'
 
-class QuoteProcessingError(BillingError):
+class QuoteProcessingError(MatrixError):
     pass
 
 class EmailError(QuoteProcessingError):
