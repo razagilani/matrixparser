@@ -84,14 +84,21 @@ class DirectPortalMatrixParser(QuoteParser):
             price = self.reader.get(0, row, self.PRICE_COL, float) * \
                     target_unit / expected_unit
 
-            # all TODO
-            start_from = datetime(2000, 1, 1)
-            start_until = datetime(2000, 1, 2)
-
-            yield MatrixQuote(
-                start_from=start_from, start_until=start_until,
-                term_months=term, valid_from=self._valid_from,
-                valid_until=self._valid_until, min_volume=min_vol,
-                limit_volume=limit_vol, rate_class_alias=rca, price=price,
-                service_type=service_type, file_reference='%s %s,%s,%s' % (
-                    self.file_name, 0, row, self.PRICE_COL))
+            # TODO: quotes are temporarily duplicated 4 times as a workaround
+            # for a bug where Team Portal cannot show quotes that started
+            # before the current month
+            start = Month(self._valid_from).first
+            for start_from, start_until in [
+                (start, (Month(start) + 1).first),
+                ((Month(start) + 1).first, (Month(start) + 2).first),
+                ((Month(start) + 2).first, (Month(start) + 3).first),
+                ((Month(start) + 3).first, (Month(start) + 4).first),
+            ]:
+                yield MatrixQuote(
+                    start_from=date_to_datetime(start_from),
+                    start_until=date_to_datetime(start_until),
+                    term_months=term, valid_from=self._valid_from,
+                    valid_until=self._valid_until, min_volume=min_vol,
+                    limit_volume=limit_vol, rate_class_alias=rca, price=price,
+                    service_type=service_type, file_reference='%s %s,%s,%s' % (
+                        self.file_name, 0, row, self.PRICE_COL))
