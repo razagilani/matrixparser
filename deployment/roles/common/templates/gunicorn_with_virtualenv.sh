@@ -21,7 +21,7 @@
 . /etc/rc.d/init.d/functions
 
 prog=/home/matrix/matrix-virtualenv/bin/gunicorn
-ARGS="--bind 127.0.0.1:8080 -m 0 run_web"
+ARGS="--bind 127.0.0.1:8080 -m 0 bin/run_web"
 APP_ROOT=/home/matrix/quote-parser/
 lockfile=${LOCKFILE-/var/lock/subsys/gunicorn}
 pidfile=/var/run/gunicorn_sr.pid

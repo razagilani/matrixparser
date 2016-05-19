@@ -2,7 +2,7 @@ from io import BytesIO
 from unittest import TestCase
 from zipfile import ZipFile
 
-from brokerage.exceptions import BillingError
+from brokerage.exceptions import MatrixError
 from brokerage.file_utils import extract_zip
 
 
@@ -16,7 +16,7 @@ class UnzipFileTest(TestCase):
         self.zip_file.close()
         self.fp.seek(0)
 
-        with self.assertRaises(BillingError):
+        with self.assertRaises(MatrixError):
             extract_zip(self.fp)
 
     def test_extract_zip_1_file(self):
@@ -33,5 +33,5 @@ class UnzipFileTest(TestCase):
         self.zip_file.close()
         self.fp.seek(0)
 
-        with self.assertRaises(BillingError):
+        with self.assertRaises(MatrixError):
             extract_zip(self.fp)

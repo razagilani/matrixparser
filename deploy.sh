@@ -23,7 +23,7 @@ function ctrl_c() {
 
 
 # Infer the developer's bitbucket username.
-git_repo=`git remote get-url origin | cut -d'@' -f2 | sed 's/:/\//' | sed 's/.git$//'`
+git_repo=`git remote get-url origin | cut -d'@' -f2 | sed 's/:/\//' | sed 's/.git//'`
 bitbucket_username=`git remote get-url origin | cut -d':' -f2 | cut -d'/' -f1`
 #echo repo=$git_repo .... username=$bitbucket_username
 read -p "Enter password for Bitbucket user ${bitbucket_username}: " -s password

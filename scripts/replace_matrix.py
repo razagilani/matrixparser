@@ -6,7 +6,7 @@ import pkgutil
 import re
 import shutil
 from importlib import import_module
-from os.path import join, basename, splitext
+from os.path import join, basename, splitext, dirname
 from subprocess import check_call
 
 import click
@@ -53,14 +53,16 @@ def main(parser_name, example_file_paths):
     # but it doesn't matter--any test should be able to go with any file
 
     for test_class, example_file_path in zip(test_classes, example_file_paths):
-        # replace old example file with new one
-        # (shell instead of hg library since we may not be using hg in the future)
+        # replace old example file with new one. subdirectory_path will be
+        # empty unless the file is inside a subdirectory of QUOTE_FILES_DIR
         old_example_file_path = join(QUOTE_FILES_DIR, test_class.FILE_NAME)
+        subdirectory_path = dirname(test_class.FILE_NAME)
         new_example_file_name = basename(example_file_path)
-        new_example_file_path = join(QUOTE_FILES_DIR, new_example_file_name)
+        new_example_file_path = join(QUOTE_FILES_DIR, subdirectory_path,
+                                     new_example_file_name)
         shutil.copy(example_file_path, new_example_file_path)
-        for command in ('hg add "%s"' % new_example_file_path,
-                        'hg remove "%s"' % old_example_file_path):
+        for command in ('git add "%s"' % new_example_file_path,
+                        'git rm "%s"' % old_example_file_path):
             print command
             check_call(['/bin/bash', '--login', '-c', command])
 
@@ -83,7 +85,8 @@ def main(parser_name, example_file_paths):
         m = re.match('^(\s+)FILE_NAME = ', line)
         if m:
             test_lines[i] = "%sFILE_NAME = '%s'" % (
-                m.group(1), basename(example_file_paths[j]))
+                m.group(1),
+                join(subdirectory_path, basename(example_file_paths[j])))
             j += 1
     with open(test_file_path, 'w') as test_file:
         test_file.write('\n'.join(test_lines))
