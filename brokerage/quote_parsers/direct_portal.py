@@ -1,15 +1,12 @@
-from datetime import datetime
-
-from brokerage.exceptions import ValidationError
 from tablib import formats
 
-from brokerage.quote_parser import QuoteParser, excel_number_to_datetime, \
-    SimpleCellDateGetter, FileNameDateGetter
+from brokerage.exceptions import ValidationError
+from brokerage.model import MatrixQuote
+from brokerage.quote_parser import QuoteParser, FileNameDateGetter
 from brokerage.spreadsheet_reader import SpreadsheetReader
-from brokerage.validation import _assert_true, ELECTRIC, GAS, _assert_equal
+from brokerage.validation import ELECTRIC, GAS, _assert_equal
 from util.dateutils import date_to_datetime
 from util.monthmath import Month
-from brokerage.model import MatrixQuote
 from util.units import unit_registry
 
 
