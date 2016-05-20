@@ -16,15 +16,14 @@ class PriceQuoteCell(object):
     necessary to fetch all other data necesssary to produce the quote.
     """
 
-    def __init__(self, matrix_parser, reader, sheet, row, col, rate_class_alias,
-                 rate_class_ids):
+    def __init__(self, matrix_parser, reader, sheet, row, col,
+                 rate_class_alias):
         self.matrix_parser = matrix_parser
         self.reader = reader
         self.sheet = sheet
         self.row = row
         self.col = col
         self.rate_class_alias = rate_class_alias
-        self.rate_class_ids = rate_class_ids
 
     def generate_quote(self, ):
         raise NotImplemented
@@ -34,11 +33,10 @@ class SuperSaverPriceCell(PriceQuoteCell):
     """ Represents a price in the "Super Saver" columns.
     """
 
-    def __init__(self, matrix_parser, reader, sheet, row, col, rate_class_alias,
-                 rate_class_ids):
+    def __init__(self, matrix_parser, reader, sheet, row, col,
+                 rate_class_alias):
         super(self.__class__, self).__init__(matrix_parser, reader, sheet, row,
-                                             col, rate_class_alias,
-                                             rate_class_ids)
+                                             col, rate_class_alias)
 
     def generate_quote(self):
         price = self.reader.get(self.sheet, self.row, self.col, basestring)
@@ -69,29 +67,23 @@ class SuperSaverPriceCell(PriceQuoteCell):
                             self.matrix_parser.START_COL, basestring)))
         start_until = date_to_datetime((Month(start_from) + 1).first)
 
-        for rate_class_id in self.rate_class_ids:
-            quote = MatrixQuote(
-                start_from=start_from, start_until=start_until,
-                term_months=term_months,
-                valid_from=self.matrix_parser._valid_from,
-                valid_until=self.matrix_parser._valid_until,
-                min_volume=min_vol, limit_volume=limit_vol,
-                purchase_of_receivables=False,
-                rate_class_alias=self.rate_class_alias, price=price,
-                service_type=ELECTRIC)
-            quote.rate_class_id = rate_class_id
-            yield quote
+        yield MatrixQuote(
+            start_from=start_from, start_until=start_until,
+            term_months=term_months, valid_from=self.matrix_parser._valid_from,
+            valid_until=self.matrix_parser._valid_until, min_volume=min_vol,
+            limit_volume=limit_vol, purchase_of_receivables=False,
+            rate_class_alias=self.rate_class_alias, price=price,
+            service_type=ELECTRIC)
 
 
 class NormalPriceCell(PriceQuoteCell):
     """ Represents a price quote in the normal fixed-rate quote columns.
     """
 
-    def __init__(self, matrix_parser, reader, sheet, row, col, rate_class_alias,
-                 rate_class_ids):
+    def __init__(self, matrix_parser, reader, sheet, row, col,
+                 rate_class_alias):
         super(self.__class__, self).__init__(matrix_parser, reader, sheet, row,
-                                             col, rate_class_alias,
-                                             rate_class_ids)
+                                             col, rate_class_alias)
 
     def generate_quote(self):
         price = self.reader.get(self.sheet, self.row, self.col, basestring)
@@ -136,18 +128,13 @@ class NormalPriceCell(PriceQuoteCell):
                             self.matrix_parser.START_COL, basestring)))
         start_until = date_to_datetime((Month(start_from) + 1).first)
 
-        for rate_class_id in self.rate_class_ids:
-            quote = MatrixQuote(
-                start_from=start_from, start_until=start_until,
-                term_months=term_months,
-                valid_from=self.matrix_parser._valid_from,
-                valid_until=self.matrix_parser._valid_until,
-                min_volume=min_vol, limit_volume=limit_vol,
-                purchase_of_receivables=False,
-                rate_class_alias=self.rate_class_alias, price=price,
-                service_type=ELECTRIC)
-            quote.rate_class_id = rate_class_id
-            yield quote
+        yield MatrixQuote(
+            start_from=start_from, start_until=start_until,
+            term_months=term_months, valid_from=self.matrix_parser._valid_from,
+            valid_until=self.matrix_parser._valid_until, min_volume=min_vol,
+            limit_volume=limit_vol, purchase_of_receivables=False,
+            rate_class_alias=self.rate_class_alias, price=price,
+            service_type=ELECTRIC)
 
 
 class LibertyMatrixParser(QuoteParser):
@@ -360,8 +347,6 @@ class LibertyMatrixParser(QuoteParser):
                       not self._is_sheet_green(s)]:
             for table_start_row, rate_class_alias in self._scan_for_tables(
                     sheet):
-                rate_class_ids = self.get_rate_class_ids_for_alias(
-                    rate_class_alias)
                 for col, price_type in self._scan_table_headers(
                         sheet, table_start_row):
                     # row_offset indicates how many rows between start of table and first row
@@ -372,8 +357,7 @@ class LibertyMatrixParser(QuoteParser):
                         row = table_start_row + row_offset
                         for quote in price_type(
                                 self, self.reader, sheet, row, col,
-                                rate_class_alias,
-                                rate_class_ids).generate_quote():
+                                rate_class_alias).generate_quote():
                             quote.file_reference = '%s %s,%s,%s' % (
                                 self.file_name, sheet, row, col)
                             yield quote
