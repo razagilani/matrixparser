@@ -177,12 +177,7 @@ class QuoteParser(object):
     # number of digits
     ROUNDING_DIGITS = None
 
-    def __init__(self, brokerage_dao=model):
-        """
-        :param brokerage_dao: object having a 'load_rate_class_aliases'
-        method/function, such as the module brokerage.model (use
-        this to avoid accessing the database in tests)
-        """
+    def __init__(self):
         # name should be defined
         assert isinstance(self.NAME, basestring)
 
@@ -204,10 +199,6 @@ class QuoteParser(object):
 
         # number of quotes read so far
         self._count = 0
-
-        # mapping of rate class alias to rate class ID, loaded in advance to
-        # avoid repeated queries
-        self._rate_class_aliases = {} #brokerage_dao.load_rate_class_aliases()
 
         # set when load_file is called
         self.file_name = None
@@ -280,16 +271,6 @@ class QuoteParser(object):
     def _validate(self):
         # subclasses can override this to do additional validation
         pass
-
-    def get_rate_class_ids_for_alias(self, alias):
-        """Return ID of rate class for the given alias, if there is one,
-        otherwise [None].
-        """
-        try:
-            rate_class_ids = self._rate_class_aliases[alias]
-        except KeyError:
-            return [None]
-        return rate_class_ids
 
     def extract_quotes(self):
         """Yield Quotes extracted from the file. Raise ValidationError if the

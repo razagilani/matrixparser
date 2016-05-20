@@ -273,16 +273,11 @@ class GEEMatrixParser(QuoteParser):
                         quote = GEEPriceQuote(self, sheet, price_row,
                             price_col, is_onr_sheet).evaluate()
 
-                        rate_class_ids = self.get_rate_class_ids_for_alias(
-                            quote.rate_class_alias)
-
-                        for rate_class_id in rate_class_ids:
-                            if 'custom' not in quote.rate_class_alias.lower():
-                                quote = quote.clone()
-                                quote._validator = ElectricValidator()
-                                quote.rate_class_id = rate_class_id
-                                quote.service_type = ELECTRIC
-                                yield quote
+                        if 'custom' not in quote.rate_class_alias.lower():
+                            quote = quote.clone()
+                            quote._validator = ElectricValidator()
+                            quote.service_type = ELECTRIC
+                            yield quote
                     elif isinstance(price, type(None)):
                         # Break if we're at the first blank cell
                         # This indicates end-of-row, essentially.

@@ -97,9 +97,6 @@ class USGEGasMatrixParser(QuoteParser):
                 rate_class = self.reader.get(sheet, row, self.RATE_CLASS_COL,
                                              (basestring, type(None)))
                 rate_class_alias = 'USGE-gas-%s' % '-'.join([ldc, customer_type, rate_class])
-                rate_class_ids = self.get_rate_class_ids_for_alias(
-                    rate_class_alias)
-
                 min_volume, limit_volume = self._extract_volume_range(
                     sheet, row, self.VOLUME_RANGE_COL)
 
@@ -124,20 +121,14 @@ class USGEGasMatrixParser(QuoteParser):
                         if price is None:
                             continue
 
-                        for rate_class_id in rate_class_ids:
-                            quote = MatrixQuote(
-                                start_from=start_from, start_until=start_until,
-                                term_months=term, valid_from=self._valid_from,
-                                valid_until=self._valid_until,
-                                min_volume=min_volume,
-                                limit_volume=limit_volume,
-                                purchase_of_receivables=False, price=price,
-                                rate_class_alias=rate_class_alias,
-                                service_type='gas',
-                                file_reference='%s %s,%s,%s' % (
-                                    self.file_name, sheet, row, i))
-                            # TODO: rate_class_id should be determined automatically
-                            # by setting rate_class
-                            quote.rate_class_id = rate_class_id
-                            yield quote
-
+                        yield MatrixQuote(
+                            start_from=start_from, start_until=start_until,
+                            term_months=term, valid_from=self._valid_from,
+                            valid_until=self._valid_until,
+                            min_volume=min_volume,
+                            limit_volume=limit_volume,
+                            purchase_of_receivables=False, price=price,
+                            rate_class_alias=rate_class_alias,
+                            service_type='gas',
+                            file_reference='%s %s,%s,%s' % (
+                                self.file_name, sheet, row, i))

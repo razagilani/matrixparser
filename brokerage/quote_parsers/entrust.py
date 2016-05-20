@@ -102,7 +102,6 @@ class EntrustMatrixParser(QuoteParser):
         utility = self.reader.get(sheet, self.UTILITY_ROW, self.UTILITY_COL,
                                   basestring)
         rate_class_alias = 'Entrust-electric-' + utility
-        rate_class_ids = self.get_rate_class_ids_for_alias(rate_class_alias)
 
         # they spell "Annually" wrong in some columns
         max_only_regex = r'<\s*(?P<high>[\d,]+)\s*kWh Annuall?y'
@@ -150,22 +149,16 @@ class EntrustMatrixParser(QuoteParser):
                     term_months = self.reader.get(
                         sheet, self.TERM_ROW, col, int)
 
-                for rate_class_id in rate_class_ids:
-                    quote = MatrixQuote(
-                        start_from=start_from, start_until=start_until,
-                        term_months=term_months, valid_from=self._valid_from,
-                        valid_until=self._valid_until,
-                        min_volume=min_volume, limit_volume=limit_volume,
-                        rate_class_alias=rate_class_alias,
-                        purchase_of_receivables=False, price=price,
-                        service_type='electric',
-                        file_reference='%s %s,%s,%s' % (
-                            self.file_name, sheet, row, col))
-                    # TODO: rate_class_id should be determined automatically
-                    # by setting rate_class
-                    if rate_class_id is not None:
-                        quote.rate_class_id = rate_class_id
-                    yield quote
+                yield MatrixQuote(
+                    start_from=start_from, start_until=start_until,
+                    term_months=term_months, valid_from=self._valid_from,
+                    valid_until=self._valid_until,
+                    min_volume=min_volume, limit_volume=limit_volume,
+                    rate_class_alias=rate_class_alias,
+                    purchase_of_receivables=False, price=price,
+                    service_type='electric',
+                    file_reference='%s %s,%s,%s' % (
+                        self.file_name, sheet, row, col))
 
     def _extract_quotes(self):
         for sheet in self.reader.get_sheet_titles():
