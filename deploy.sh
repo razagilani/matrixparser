@@ -1,12 +1,21 @@
 #/bin/bash
 
 
-# Give only one command-line arg.
+# PURPOSE: This script is a wrapper around Ansible, our deployment and 
+#          provisioning tool. It infers your git username, repository,
+#          and Bitbucket username. When deploying code, implicitly
+#          it deploys from the current revision in your local repo.
+#          You must make sure it also exists in your fork.
+
+
+# Take only one command-line arg: dev or prod.
 if [ -z $1 ]; then
     echo "Usage: $0 [dev|prod]"
     exit 1
 fi
 
+
+# Infer the git executable version, only works with > 2.
 git_version_str=$(git --version | cut -d ' ' -f3)
 if [ ${git_version_str:0:1} -ne 2 ];
 then
@@ -14,6 +23,8 @@ then
     exit 1
 fi
 
+
+# Trap Ctrl+C to stop this script.
 trap ctrl_c INT
 function ctrl_c() {
     echo ""
@@ -22,10 +33,17 @@ function ctrl_c() {
 }
 
 
-# Infer the developer's bitbucket username.
+# Infer the developer's bitbucket username. It is inferred from
+# the repo's location.
 git_repo=`git remote get-url origin | cut -d'@' -f2 | sed 's/:/\//' | sed 's/.git//'`
 bitbucket_username=`git remote get-url origin | cut -d':' -f2 | cut -d'/' -f1`
-#echo repo=$git_repo .... username=$bitbucket_username
+if [ -z ${bitbucker_username} ];then
+    echo "Cannot find Bitbucket username"
+    exit 1
+fi
+
+
+# Capture the user's password but does not echo to the terminal.
 read -p "Enter password for Bitbucket user ${bitbucket_username}: " -s password
 echo ""
 
@@ -35,11 +53,14 @@ basepath=`pwd`
 current_branch=`git rev-parse --abbrev-ref HEAD`
 git_rev=`git rev-parse HEAD`
 
+
+# Determine if there are uncommitted changes, if so, abort!
 git diff --quiet
 if [[ $? -ne 0 ]]; then
     echo "Uncommitted changes!"
     exit 3
 fi
+
 
 # before starting the deployment process, check that Bitbucket credentials are
 # right and the revision exists.
@@ -48,13 +69,13 @@ fi
 output=$(wget --method=HEAD "https://$bitbucket_username:${password}@${git_repo}/get/$git_rev.zip" --no-verbose 2>&1)
 if [[ $? != 0 ]]; then
     echo $output
-    exit
+    exit 1
 fi
 
 
 # Do extra validation if pushing to prod.
 if [ "$1" == "prod" ]; then
-    read -n 1 -p "Deploy from ${git_repo} branch ${current_branch} (y/n)?" repo_confirm
+    read -n 1 -p "Deploy from ${git_repo} branch ${current_branch} (y/n)? " repo_confirm
     echo ""
     
     if [ "${repo_confirm}" = "n" ]; then
@@ -80,7 +101,7 @@ if [ "$1" == "prod" ]; then
 fi
 
 
-echo "Deploying revision ${git_rev} on ${current_branch} ..."
+echo "Deploying revision ${git_rev} on ${current_branch}!"
 
 cd deployment
 ansible-playbook -i $1 app.yml --extra-vars "revision=${git_rev} hg_username=${bitbucket_username} hg_password=${password} hg_branch=${current_branch} hg_repo=${git_repo}"
