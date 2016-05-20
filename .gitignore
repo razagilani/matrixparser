@@ -1,4 +1,4 @@
-.DS_Store # annoying invisible files created by Mac OS
+.DS_Store
 .directory
 .idea
 *.log
