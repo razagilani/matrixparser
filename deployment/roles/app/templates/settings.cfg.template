@@ -48,7 +48,7 @@ metrics_port = 8125
 keys=root,read_quotes
 
 [handlers]
-keys=consoleHandler,read_quotes_handler
+keys=consoleHandler,read_quotes_handler,logstash_handler
 
 [formatters]
 keys=simpleFormatter
@@ -59,7 +59,7 @@ handlers=consoleHandler
 
 [logger_read_quotes]
 level=DEBUG
-handlers=read_quotes_handler
+handlers=read_quotes_handler,logstash_handler
 qualname=read_quotes
 
 [handler_consoleHandler]
@@ -73,6 +73,12 @@ class=handlers.RotatingFileHandler
 level=DEBUG
 formatter=simpleFormatter
 args=('/home/{{ app_user }}/logs/read_quotes.log','a',100000000,20)
+
+[handler_logstash_handler]
+class=logstash.TCPLogstashHandler
+level=INFO
+formatter=simpleFormatter
+args=('localhost', 5959) # TODO find actual host number
 
 [formatter_simpleFormatter]
 format=%(asctime)s %(process)d %(name)s - %(levelname)s - %(message)s
