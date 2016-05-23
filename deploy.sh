@@ -37,7 +37,7 @@ function ctrl_c() {
 # the repo's location.
 git_repo=`git remote get-url origin | cut -d'@' -f2 | sed 's/:/\//' | sed 's/.git//'`
 bitbucket_username=`git remote get-url origin | cut -d':' -f2 | cut -d'/' -f1`
-if [ -z ${bitbucker_username} ];then
+if [ -z ${bitbucket_username} ];then
     echo "Cannot find Bitbucket username"
     exit 1
 fi
