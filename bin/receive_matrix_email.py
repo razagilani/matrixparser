@@ -42,7 +42,6 @@ if __name__ == '__main__':
         initialize()
 
         from brokerage import config
-        logger.info('HELLO')
         s3_connection = S3Connection(
             config.get('aws_s3', 'aws_access_key_id'),
             config.get('aws_s3', 'aws_secret_access_key'),
