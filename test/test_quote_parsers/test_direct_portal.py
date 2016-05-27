@@ -40,6 +40,17 @@ class TestDirectPortal(QuoteParserTest, TestCase):
         self.assertEqual(datetime(2016, 5, 1), q.start_from)
         self.assertEqual(datetime(2016, 6, 1), q.start_until)
 
+    def test_none_rca(self):
+        # the quote in row 4 has None in column D, which should be
+        # represented as "" (instead of "None") in the rate class alias
+        q = next(
+            quote for quote in self.quotes if '4,G' in quote.file_reference)
+        self.assertEqual('Direct Energy Small Business-electric-CT-CTE-',
+                         q.rate_class_alias)
+        self.assertEqual(q.term_months, 18)
+        self.assertEqual(q.min_volume, 0)
+        self.assertEqual(q.price, .0829)
+        self.assertEqual(ELECTRIC, q.service_type)
 
     def test_gas_therm(self):
         # first gas quote: unit is therm
