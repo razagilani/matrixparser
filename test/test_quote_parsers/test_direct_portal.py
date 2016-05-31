@@ -19,7 +19,7 @@ class TestDirectPortal(QuoteParserTest, TestCase):
 
     def check_every_quote(self, q):
         self.assertEqual(q.valid_from, datetime(2016, 5, 17))
-        self.assertEqual(q.valid_until, datetime(2016, 5, 18))
+        self.assertEqual(q.valid_until, datetime(2016, 6, 1))
         self.assertEqual(0, q.min_volume)
         if q.service_type == ELECTRIC:
             self.assertEqual(750000, q.limit_volume)
