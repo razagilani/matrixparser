@@ -1,3 +1,4 @@
+from datetime import timedelta
 from tablib import formats
 
 from brokerage.exceptions import ValidationError
@@ -41,6 +42,14 @@ class DirectPortalMatrixParser(QuoteParser):
     date_getter = FileNameDateGetter()
 
     def _extract_quotes(self):
+
+        # TODO:
+        # as a temporary workaround for not being able to represent quotes that
+        # stay valid until the next batch of quotes is received, we hard-code
+        # an expiration date 2 weeks after the start. the actual fix for this is
+        # described here: https://nextility.atlassian.net/browse/MATRIX-89
+        self._valid_until = self._valid_from + timedelta(days=15)
+
         for row in xrange(self.QUOTE_START_ROW, self.reader.get_height(0) + 1):
             # skip "NEST" rows, related to Nest thermostat
             if self.reader.get(0, row, self.OFFER_TYPE_COL,
