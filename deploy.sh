@@ -34,6 +34,7 @@ function ctrl_c() {
 
 
 # Capture the user's username
+git_repo=`git remote get-url origin | cut -d'@' -f2 | sed 's/:/\//' | sed 's/.git//'`
 read -p "Enter bitbucket username: " bitbucket_username
 echo ""
 
