@@ -65,8 +65,7 @@ fi
 # right and the revision exists.
 # wget prints the URL (including password) to stdout if it succeeds, so only
 # print the output if it failed
-output=$(wget --method=HEAD "https://${bitbucket_username}:${password}@$
-{git_repo}/get/$git_rev.zip" --no-verbose 2>&1)
+output=$(wget --method=HEAD "https://${bitbucket_username}:${password}@${git_repo}/get/$git_rev.zip" --no-verbose 2>&1)
 if [[ $? != 0 ]]; then
     echo $output
     exit 1
