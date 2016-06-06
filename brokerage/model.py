@@ -1,13 +1,12 @@
-'''
-SQLALchemy classes for all applications that use the utility bill database.
-Also contains some related classes that do not correspond to database tables.
-'''
+"""
+SQLALchemy classes that represent database tables.
+"""
 from datetime import datetime
 from itertools import chain
 
 import sqlalchemy
-from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, MetaData, DateTime, Boolean, Numeric, \
-    Float
+from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, MetaData, \
+    DateTime, Boolean, Numeric, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import relationship
@@ -128,8 +127,8 @@ class _Base(object):
         mapper = self._sa_instance_state.mapper
         return {column_property.columns[0].name: getattr(self, attr_name) for
                 attr_name, column_property in mapper.column_attrs.items()
-                if column_property.columns[0] not in mapper.primary_key
-                and attr_name not in exclude}
+                if column_property.columns[0] not in mapper.primary_key and
+                attr_name not in exclude}
                   
     def _copy_data_from(self, other):
         """Copy all column values from 'other' (except primary key),  replacing
@@ -165,14 +164,12 @@ class _Base(object):
 Base = declarative_base(cls=_Base)
 AltitudeBase = declarative_base(cls=_Base)
 
-_schema_revision = '1b2e812810e7'
-
 
 class Supplier(Base):
-    '''A company that supplies energy and is responsible for the supply
+    """A company that supplies energy and is responsible for the supply
     charges on utility bills. This may be the same as the utility in the
     case of SOS.
-    '''
+    """
     __tablename__ = 'supplier'
     id = Column(Integer, primary_key=True)
     name = Column(String(1000), nullable=False, unique=True)
@@ -209,7 +206,7 @@ def count_active_matrix_quotes():
     now = datetime.utcnow()
     s = AltitudeSession()
     return s.query(MatrixQuote).filter(MatrixQuote.valid_from <= now,
-                                MatrixQuote.valid_until < now).count()
+                                       MatrixQuote.valid_until < now).count()
 
 
 class MatrixFormat(Base):
@@ -247,7 +244,8 @@ class Quote(AltitudeBase):
 
     # inclusive start and exclusive end of the period during which the
     # customer can start receiving energy from this supplier
-    start_from = Column('Earliest_Contract_Start_Date', DateTime, nullable=False)
+    start_from = Column('Earliest_Contract_Start_Date', DateTime,
+                        nullable=False)
     start_until = Column('Latest_Contract_Start_Date', DateTime, nullable=False)
 
     # term length in number of utility billing periods
@@ -267,7 +265,8 @@ class Quote(AltitudeBase):
                                      nullable=False, server_default='0')
 
     # fixed price for energy in dollars/energy unit
-    price = Column('Matrix_Price_Dollars_KWH_Therm', Numeric(precision=10, scale=7), nullable=False)
+    price = Column('Matrix_Price_Dollars_KWH_Therm',
+                   Numeric(precision=10, scale=7), nullable=False)
 
     # dual billing
     dual_billing = Column('Dual_Billing', Boolean, nullable=False,
@@ -280,7 +279,8 @@ class Quote(AltitudeBase):
     service_type = None #Column(String, nullable=False)
 
     # Note: "1" is the system user.
-    created_by = Column('Created_By', Integer, nullable=False, server_default="1")
+    created_by = Column('Created_By', Integer, nullable=False,
+                        server_default="1")
 
     discriminator = Column('Discriminator', String(50), nullable=False)
 
