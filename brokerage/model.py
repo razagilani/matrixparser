@@ -168,28 +168,6 @@ AltitudeBase = declarative_base(cls=_Base)
 _schema_revision = '1b2e812810e7'
 
 
-class Address(Base):
-    __tablename__ = 'address'
-
-    id = Column(Integer, primary_key=True)
-    addressee = Column(String(1000), nullable=False, default='')
-    street = Column(String(1000), nullable=False, default='')
-    city = Column(String(1000), nullable=False, default='')
-    state = Column(String(1000), nullable=False, default='')
-    postal_code = Column(String(1000), nullable=False, default='')
-
-    def __hash__(self):
-        return hash(self.addressee + self.street + self.city + self.postal_code)
-
-    def __repr__(self):
-        return 'Address<(%s, %s, %s, %s, %s)' % (
-        self.addressee, self.street, self.city, self.state, self.postal_code)
-
-    def __str__(self):
-        return '%s, %s, %s %s' % (
-            self.street, self.city, self.state, self.postal_code)
-
-
 class Supplier(Base):
     '''A company that supplies energy and is responsible for the supply
     charges on utility bills. This may be the same as the utility in the
@@ -203,9 +181,6 @@ class Supplier(Base):
     # expression because file names can contain the current date or other
     # varying text.
     matrix_email_recipient = Column(String, unique=True)
-
-    address_id = Column(Integer, ForeignKey('address.id'))
-    address = relationship("Address")
 
     def __repr__(self):
         return '<Supplier(%s)>' % self.name
