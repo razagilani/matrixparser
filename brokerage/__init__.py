@@ -159,10 +159,8 @@ def init_altitude_db(uri=None):
     import_all_model_modules()
 
     uri = uri if uri else config.get('db', 'altitude_uri')
-    engine = create_engine(
-        uri, echo=config.get('db', 'echo'), pool_recycle=3600,
-        #connect_args={'appname', 'receive_matrix_email with PID %s' % (os.getpid())})
-        connect_args={'appname': 'receive_matrix_email with PID %s, parent %s' % (os.getpid(), os.getppid())})
+    engine = create_engine(uri, echo=config.get('db', 'echo'),
+        pool_recycle=3600)
 
     altitude_metadata.bind = engine
     AltitudeSession.configure(bind=engine)
