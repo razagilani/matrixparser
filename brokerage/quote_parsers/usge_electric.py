@@ -130,7 +130,6 @@ class USGEElectricMatrixParser(QuoteParser):
 
                     end_col = min(self.reader.get_width(sheet) - 1, term_col + 5)
                     for i in self.reader.column_range(term_col, end_col):
-                        print i
                         start_from = self.reader.get(sheet, self.HEADER_ROW,
                                                      i, (type(None),datetime))
                         if start_from is None:
