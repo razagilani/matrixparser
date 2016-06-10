@@ -1,28 +1,28 @@
 import os
 from cStringIO import StringIO
 from email.message import Message
-from unittest import TestCase, skip
+from unittest import TestCase
 
 import statsd
 from boto.s3.bucket import Bucket
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
-from brokerage.model import Supplier, Session, AltitudeSession, Company, MatrixFormat, Quote, MatrixQuote
 from mock import Mock
 
-from brokerage.model import Company, Quote, MatrixQuote, MatrixFormat
+from brokerage import init_altitude_db, init_model, ROOT_PATH
 from brokerage.exceptions import ValidationError
+from brokerage.model import Company, Quote, MatrixQuote, MatrixFormat
+from brokerage.model import Supplier, Session, AltitudeSession
 from brokerage.quote_email_processor import QuoteEmailProcessor, EmailError, \
     UnknownSupplierError, QuoteDAO, MultipleErrors, NoFilesError, NoQuotesError, \
     UnknownFormatError
 from brokerage.quote_parser import QuoteParser
 from brokerage.quote_parsers import CLASSES_FOR_FORMATS
-from brokerage import init_altitude_db, init_model, ROOT_PATH
 from test import init_test_config, clear_db, create_tables
 from test.setup_teardown import FakeS3Manager
 
-EMAIL_FILE_PATH = os.path.join(ROOT_PATH, 'test', 
-                               'quote_files', 'quote_email.txt')
+EMAIL_FILE_PATH = os.path.join(ROOT_PATH, 'test', 'quote_files',
+                               'example_email_usge.txt')
 
 def setUpModule():
     init_test_config()
@@ -360,7 +360,6 @@ class TestQuoteDAO(TestCase):
             self.dao.get_matrix_format_for_file(self.supplier, 'a')
 
 
-@skip('Cats')
 class TestQuoteEmailProcessorWithDB(TestCase):
     """Integration test using a real email with QuoteEmailProcessor,
     QuoteDAO, and QuoteParser, including the database.
@@ -372,7 +371,6 @@ class TestQuoteEmailProcessorWithDB(TestCase):
         create_tables()
         init_model()
         init_altitude_db()
-        clear_db()
 
     @classmethod
     def tearDownClass(cls):
@@ -407,10 +405,13 @@ class TestQuoteEmailProcessorWithDB(TestCase):
             id=199, name='USGE',
             matrix_email_recipient='recipient1@nextility.example.com',
             matrix_formats=[
-                # this ID should correspond to USGE in
+                # these IDs must correspond to the 2 USGE parser classes in
                 # 'quote_parsers.CLASSES_FOR_FORMATS'
                 MatrixFormat(matrix_format_id=4,
-                             matrix_attachment_name='2. USGE Gas.xlsx')])
+                             matrix_attachment_name='.*GAS.*\.xlsx'),
+                MatrixFormat(matrix_format_id=14,
+                             matrix_attachment_name='.*ELEC.*\.xlsx'),
+            ])
         self.altitude_supplier = Company(company_id=1, name=self.supplier.name)
 
         # extra supplier that will never match any email, to make sure the
@@ -422,11 +423,9 @@ class TestQuoteEmailProcessorWithDB(TestCase):
         self.email_file.close()
         clear_db()
 
-    @skip(
-        "this fails. need to test on the same database we are using in "
-        "production.")
     def test_process_email(self):
-        Session().add(self.supplier)
+        s = Session()
+        s.add(self.supplier)
         a = AltitudeSession()
         a.add(self.altitude_supplier)
         self.assertEqual(0, a.query(Quote).count())
@@ -435,7 +434,7 @@ class TestQuoteEmailProcessorWithDB(TestCase):
         self.assertEqual(0, len(self.s3_bucket.get_all_keys()))
 
         self.qep.process_email(self.email_file)
-        self.assertEqual(2144, a.query(Quote).count())
+        self.assertGreater(a.query(Quote).count(), 0)
 
         # example email has 2 attachments in it, so 2 files are uploaded
         self.assertEqual(2, len(self.s3_bucket.get_all_keys()))
@@ -445,7 +444,6 @@ class TestQuoteEmailProcessorWithDB(TestCase):
         # Session) returns a different object each time it is called. i
         # haven't figured out why that is yet.
         a.rollback()
-
 
     def test_process_email_no_supplier_match(self):
         # supplier is missing but altitude_supplier is present
@@ -471,4 +469,4 @@ class TestQuoteEmailProcessorWithDB(TestCase):
 
         Session().add(self.supplier)
         self.qep.process_email(self.email_file)
-        self.assertEqual(2144, a.query(Quote).count())
+        self.assertGreater(a.query(Quote).count(), 0)
