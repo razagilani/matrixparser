@@ -33,15 +33,15 @@ function ctrl_c() {
 }
 
 
-# Capture the user's username
+# Infer the developer's bitbucket username. It is inferred from
+# the repo's location.
 git_repo=`git remote get-url origin | cut -d'@' -f2 | sed 's/:/\//' | sed 's/.git//'`
-read -p "Enter bitbucket username: " bitbucket_username
-echo ""
-
-if [ -z ${bitbucket_username} ]; then
-  echo "username can not be empty"
-  exit 1
+bitbucket_username=`git remote get-url origin | cut -d':' -f2 | cut -d'/' -f1`
+if [ -z ${bitbucker_username} ];then
+    echo "Cannot find Bitbucket username"
+    exit 1
 fi
+
 
 # Capture the user's password but does not echo to the terminal.
 read -p "Enter password for Bitbucket user ${bitbucket_username}: " -s password
@@ -66,7 +66,7 @@ fi
 # right and the revision exists.
 # wget prints the URL (including password) to stdout if it succeeds, so only
 # print the output if it failed
-output=$(wget --method=HEAD "https://${bitbucket_username}:${password}@${git_repo}/get/$git_rev.zip" --no-verbose 2>&1)
+output=$(wget --method=HEAD "https://$bitbucket_username:${password}@${git_repo}/get/$git_rev.zip" --no-verbose 2>&1)
 if [[ $? != 0 ]]; then
     echo $output
     exit 1
