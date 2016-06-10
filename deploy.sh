@@ -74,7 +74,7 @@ fi
 
 
 echo "Deploying revision ${git_rev} on ${current_branch} ..."
-echo '******************' $git_rev $bitbucket_username $git_repo
+echo '******************' $git_rev $bitbucket_username $git_repo $git_rev
 
 cd deployment
 ansible-playbook -i $1 app.yml --extra-vars "revision=${git_rev} hg_username=${bitbucket_username} hg_password=${password} hg_branch=${current_branch} hg_repo=${git_repo}"
