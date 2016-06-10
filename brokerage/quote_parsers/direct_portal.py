@@ -83,9 +83,10 @@ class DirectPortalMatrixParser(QuoteParser):
                     commodity)
 
             rca_prefix = 'Direct Energy Small Business-' + service_type.lower()
-            rca = '-'.join([rca_prefix] + [
-                str(self.reader.get(0, row, col, object)) for col in
-                self.RCA_COLS])
+            rca_data = [self.reader.get(0, row, col, object) for col in
+                        self.RCA_COLS]
+            rca = '-'.join(
+                [rca_prefix] + ['' if x is None else x for x in rca_data])
             term = self.reader.get(0, row, self.TERM_COL, int)
             price = self.reader.get(0, row, self.PRICE_COL, float) * \
                     target_unit / expected_unit
