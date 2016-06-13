@@ -47,8 +47,6 @@ class USGEElectricMatrixParser(QuoteParser):
 
 
     def _validate(self):
-        # EXPECTED_SHEET_TITLES and EXPECTED_CELLS are not used because
-        # there are many sheets the titles change. instead check cells here.
         for sheet in [s for s in self.EXPECTED_SHEET_TITLES if s != 'CheatSheet']:
             start_row = self._find_start_row(sheet, 2)
             sheet_columns = [
