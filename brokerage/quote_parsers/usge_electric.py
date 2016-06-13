@@ -45,7 +45,6 @@ class USGEElectricMatrixParser(QuoteParser):
         #'CheatSheet',
     ]
 
-    EXPECTED_CELLS = []
 
     def _validate(self):
         # EXPECTED_SHEET_TITLES and EXPECTED_CELLS are not used because
@@ -62,7 +61,6 @@ class USGEElectricMatrixParser(QuoteParser):
             for _, row, col, regex in sheet_columns:
                 _assert_match(
                     regex, self.reader.get(sheet, row, col, basestring))
-            self.EXPECTED_CELLS.append(sheet_columns)
 
     def _find_start_row(self, sheet, col):
         """
@@ -79,7 +77,6 @@ class USGEElectricMatrixParser(QuoteParser):
             if cell_val and ('Valid Thru' in cell_val):
                 return test_row
         else:
-            # This indicates 'Zone' not found anywhere in the column
             raise ValueError("Cannot find start row")
 
     def _extract_volume_range(self, sheet, row, col):
