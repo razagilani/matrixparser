@@ -261,8 +261,6 @@ class QuoteEmailProcessor(object):
             count = quote_parser.get_count()
             self.logger.debug('%s quotes so far' % count)
             if quote_list == []:
-                self.logger.info('Completing with %d quote error(s)' %
-                    validation_error_cnt)
                 return quote_parser
 
     def _store_quote_file(self, file_name, file_content):
