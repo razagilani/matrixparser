@@ -48,7 +48,7 @@ class USGEElectricMatrixParser(QuoteParser):
 
     def _validate(self):
         for sheet in [s for s in self.EXPECTED_SHEET_TITLES if s != 'CheatSheet']:
-            start_row = self._find_start_row(sheet, 2)
+            start_row = self._find_valid_thru_row(sheet, 2)
             sheet_columns = [
                 (sheet, start_row, 2, 'Valid Thru'),
                 (sheet, start_row + 2, 0, 'LDC'),
@@ -60,11 +60,10 @@ class USGEElectricMatrixParser(QuoteParser):
                 _assert_match(
                     regex, self.reader.get(sheet, row, col, basestring))
 
-    def _find_start_row(self, sheet, col):
+    def _find_valid_thru_row(self, sheet, col):
         """
-        Return the row index of the first row containing price data.
-        This is on the same row of the first 'Zone' token. If the given
-        col does not have Zone, raise ValueError.
+        Return the row index of the 'Valid Thru' token. If the given
+        col does not have 'Valid Thru', raise ValueError.
         :param sheet: Sheet name
         :param col: Column index
         :return: First row index containing price data
@@ -74,8 +73,7 @@ class USGEElectricMatrixParser(QuoteParser):
             cell_val = self.reader.get(sheet, test_row, col, (basestring, type(None)))
             if cell_val and ('Valid Thru' in cell_val):
                 return test_row
-        else:
-            raise ValueError("Cannot find start row")
+        raise ValueError("Cannot find start row")
 
     def _extract_volume_range(self, sheet, row, col):
         below_regex = r'Below ([\d,]+) [kK][wW][hH]'
