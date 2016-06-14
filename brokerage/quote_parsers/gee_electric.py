@@ -7,6 +7,7 @@ format, so only one parser needs to be used.
 
 import datetime
 import re
+from sys import stderr
 
 from dateutil.relativedelta import relativedelta
 from tablib import formats
@@ -270,8 +271,12 @@ class GEEMatrixParser(QuoteParser):
                     price = self.reader.get(sheet, price_row, price_col, object)
 
                     if isinstance(price, float):
-                        quote = GEEPriceQuote(self, sheet, price_row,
-                            price_col, is_onr_sheet).evaluate()
+                        try:
+                            quote = GEEPriceQuote(self, sheet, price_row,
+                                price_col, is_onr_sheet).evaluate()
+                        except ValidationError as e:
+                            print >> stderr, "Skipped quote with error:", e
+                            continue
 
                         if 'custom' not in quote.rate_class_alias.lower():
                             quote = quote.clone()
