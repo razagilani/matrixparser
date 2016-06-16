@@ -101,6 +101,10 @@ def get_attachments(message):
             continue
         if part.get('Content-Disposition') is None:
             continue
+        # decode_header is used to decode base64 encoded attachment name
+        # of the format =?utf-8?B?RGFpbHkgTWF0cml4IFByaWNlLnhscw==?=
+        # according to  RFC 2047. This call has no effect if the
+        # attachment name is not base64 encoded
         file_name = decode_header(part.get_filename())[0][0]
         if file_name == '':
             continue
