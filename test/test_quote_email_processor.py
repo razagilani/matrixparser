@@ -189,6 +189,35 @@ class TestQuoteEmailProcessor(TestCase):
         self.assertEqual(1, self.s3_bucket.new_key.call_count)
         self.assertEqual(1, self.s3_key.set_contents_from_string.call_count)
 
+    def test_process_email_base64encoded_attachment_name(self):
+        self.format_1.matrix_attachment_name = 'Daily Matrix Price.xls'
+        name ='Daily Matrix Price.xls'
+        self.message.add_header('Content-Disposition', 'attachment',
+                                filename='=?utf-8?B?RGFpbHkgTWF0cml4IFByaWNlLnhscw==?=')
+        email_file = StringIO(self.message.as_string())
+
+        self.qep.process_email(email_file)
+
+        # normal situation: quotes are extracted from the file and committed
+        # in a nested transaction
+        self.assertEqual(
+            1, self.quote_dao.get_supplier_objects_for_message.call_count)
+        #self.assertEqual(1, self.quote_dao.begin_nested.call_count)
+        self.assertEqual(1, self.quote_dao.begin.call_count)
+        self.assertEqual(len(self.quotes),
+                         self.quote_dao.insert_quotes.call_count)
+        self.assertEqual(1, self.quote_parser.load_file.call_count)
+        self.quote_parser.extract_quotes.assert_called_once_with()
+        self.assertEqual(0, self.quote_dao.rollback.call_count)
+        self.assertEqual(1, self.quote_dao.commit.call_count)
+
+        # file should have been uploaded to S3
+        # (not checking actual file contents)
+        self.s3_connection.get_bucket.assert_called_once_with(
+            self.s3_bucket_name)
+        self.s3_bucket.new_key.assert_called_once_with(name)
+        self.assertEqual(1, self.s3_key.set_contents_from_string.call_count)
+
     def test_process_email_bad_and_good_attachments(self):
         """Two files, one with a ValidationError and the other valid. The bad
         file should not stop the good one from being processed.
