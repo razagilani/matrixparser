@@ -190,6 +190,10 @@ class TestQuoteEmailProcessor(TestCase):
         self.assertEqual(1, self.s3_key.set_contents_from_string.call_count)
 
     def test_process_email_base64encoded_attachment_name(self):
+        '''
+        This test checks if a base64 encoded attachment name of the format
+        =?utf-8?B?RGFpbHkgTWF0cml4IFByaWNlLnhscw==?= can be decoded
+        '''
         self.format_1.matrix_attachment_name = 'Daily Matrix Price.xls'
         name ='Daily Matrix Price.xls'
         self.message.add_header('Content-Disposition', 'attachment',
