@@ -1,4 +1,5 @@
 import email
+from email.header import decode_header
 import logging
 import re
 import traceback
@@ -328,6 +329,7 @@ class QuoteEmailProcessor(object):
 
         files_count, quotes_count = 0, 0
         for file_name, file_content in attachments:
+            file_name = decode_header(file_name)[0][0]
             self.logger.info('Processing attachment from %s: "%s"' % (
                 supplier.name, file_name))
             self._quote_dao.begin()
