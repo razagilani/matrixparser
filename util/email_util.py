@@ -1,3 +1,4 @@
+from email.header import decode_header
 import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -100,7 +101,7 @@ def get_attachments(message):
             continue
         if part.get('Content-Disposition') is None:
             continue
-        file_name = part.get_filename()
+        file_name = decode_header(part.get_filename())[0][0]
         if file_name == '':
             continue
         # this part is an attachment
