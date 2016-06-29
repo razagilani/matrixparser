@@ -130,6 +130,12 @@ class handler_read_quotes_handler(Schema):
     args = String()
 handler_read_quotes_handler.add_field('class', String())
 
+class handler_logstash_handler(Schema):
+    level = String()
+    formatter = String()
+    args = String()
+handler_logstash_handler.add_field('class', String())
+
 class formatter_simpleFormatter(Schema):
     format = String()
 

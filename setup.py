@@ -33,7 +33,8 @@ install_requires = [
     'pyPdf==1.13',
     'pymssql#',
     'python-dateutil==2.2', # upgraded from 2.1 because "mq" uses this version
-    'python-statsd',
+    'python-logstash==0.4.6', # used to send log messages to Logstash (could also use "syslog" Logstash input plugin with Python SysLogHandler)
+    'python-statsd', # client library for StatsD (for Librato), no longer used
     'pytz==2013.8',
     'regex==2015.7.19',
     'requests==0.14.0',
