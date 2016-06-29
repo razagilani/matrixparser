@@ -35,10 +35,12 @@ if __name__ == '__main__':
     flock(f, LOCK_EX)
 
     try:
+        # logger initially has no handlers; initialize() adds them according
+        # to config file
         logger = logging.getLogger(LOG_NAME)
         logger.setLevel(logging.DEBUG)
-
         initialize()
+
         from brokerage import config
         s3_connection = S3Connection(
             config.get('aws_s3', 'aws_access_key_id'),
