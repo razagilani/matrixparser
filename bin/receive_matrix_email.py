@@ -27,13 +27,6 @@ def split_altitude_uri(altitude_uri):
 
 
 if __name__ == '__main__':
-    # temporary hack: the giant SQL statement below is believed to
-    # cause performance problems when run in MS SQL Server, which
-    # could be reduced by only running instance of this script at a time.
-    # however, the SQL statement is not necessary.
-    f = open(__file__)
-    flock(f, LOCK_EX)
-
     try:
         # logger initially has no handlers; initialize() adds them according
         # to config file
