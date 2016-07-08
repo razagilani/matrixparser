@@ -71,17 +71,6 @@ class User(Base, UserMixin):
     def __repr__(self):
         return '<User %s>' % self.email
 
-    def get_beuser_billentry_duration(self, start, end):
-        """ Method to calculate the duration of user session between start and end times
-        """
-        duration = 0.0
-        start = datetime(start.year, start.month, start.day)
-        end = datetime(end.year, end.month, end.day)
-        for user_session in self.be_user_session:
-            if user_session.session_start >= start and user_session.last_request <= end:
-                duration += (user_session.last_request - user_session.session_start).total_seconds()
-        return duration
-
 
 class RoleUser(Base):
     '''Class corresponding to the "roles_user" table which represents the
