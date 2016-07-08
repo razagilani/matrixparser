@@ -26,13 +26,13 @@ from flask.ext.principal import identity_changed, Identity, AnonymousIdentity, \
     Principal, RoleNeed, identity_loaded, UserNeed, PermissionDenied
 from flask_oauth import OAuth, OAuthException
 
-from billentry import admin
-from billentry.billentry_model import BillEntryUser, Role, BEUserSession
-from billentry.common import get_bcrypt_object
+from web import admin
+from web.billentry_model import BillEntryUser, Role, BEUserSession
+from web.common import get_bcrypt_object
 from brokerage.model import Session
 from brokerage import init_config
 
-LOG_NAME = 'billentry'
+LOG_NAME = 'web'
 
 app = Flask(__name__, static_url_path="")
 bcrypt = get_bcrypt_object()
@@ -57,23 +57,23 @@ if config is None:
 
 oauth = OAuth()
 google = oauth.remote_app('google',
-    base_url=config.get('billentry', 'base_url'),
-    authorize_url=config.get('billentry', 'authorize_url'),
-    request_token_url=config.get('billentry', 'request_token_url'),
+    base_url=config.get('web', 'base_url'),
+    authorize_url=config.get('web', 'authorize_url'),
+    request_token_url=config.get('web', 'request_token_url'),
     request_token_params={
-        'scope': config.get('billentry', 'request_token_params_scope'),
-        'response_type': config.get('billentry',
+        'scope': config.get('web', 'request_token_params_scope'),
+        'response_type': config.get('web',
                                     'request_token_params_resp_type'),
-        'hd': config.get('billentry', 'authorized_domain')},
-    access_token_url=config.get('billentry', 'access_token_url'),
-    access_token_method=config.get('billentry', 'access_token_method'),
-    access_token_params={'grant_type': config.get('billentry',
+        'hd': config.get('web', 'authorized_domain')},
+    access_token_url=config.get('web', 'access_token_url'),
+    access_token_method=config.get('web', 'access_token_method'),
+    access_token_params={'grant_type': config.get('web',
                                                   'access_token_params_grant_type')},
-    consumer_key=config.get('billentry', 'google_client_id'),
-    consumer_secret=config.get('billentry', 'google_client_secret'))
+    consumer_key=config.get('web', 'google_client_id'),
+    consumer_secret=config.get('web', 'google_client_secret'))
 
-app.secret_key = config.get('billentry', 'secret_key')
-app.config['LOGIN_DISABLED'] = config.get('billentry', 'disable_authentication')
+app.secret_key = config.get('web', 'secret_key')
+app.config['LOGIN_DISABLED'] = config.get('web', 'disable_authentication')
 
 ############
 # KVSession
@@ -84,14 +84,14 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 principals = Principal(app)
 app.permanent_session_lifetime = timedelta(
-    seconds=config.get('billentry', 'timeout'))
+    seconds=config.get('web', 'timeout'))
 
 if app.config['LOGIN_DISABLED']:
     login_manager.anonymous_user = BillEntryUser.get_anonymous_user
 
 @principals.identity_loader
 def load_identity_for_anonymous_user():
-    if config.get('billentry', 'disable_authentication'):
+    if config.get('web', 'disable_authentication'):
         identity = AnonymousIdentity()
         identity.provides.add(RoleNeed('admin'))
         return identity
@@ -163,7 +163,7 @@ def index():
 
 def create_user_in_db(access_token):
     headers = {'Authorization': 'OAuth ' + access_token}
-    req = Request(config.get('billentry', 'google_user_info_url'), None,
+    req = Request(config.get('web', 'google_user_info_url'), None,
                   headers)
     try:
         # get info about currently logged in user
@@ -315,7 +315,7 @@ def log_error(exception_name, traceback):
     logger.exception('Exception in BillEntry (Token: %s): ', token)
     error_message = "Internal Server Error: %s, Error Token: " \
                     "<b>%s</b>" % (exception_name, token)
-    if config.get('billentry', 'show_traceback_on_error'):
+    if config.get('web', 'show_traceback_on_error'):
         error_message += "<br><br><pre>" + traceback.format_exc() + "</pre>"
     return error_message
 
@@ -353,7 +353,7 @@ def get_hashed_password(plain_text_password):
 def start_user_session(beuser):
     """ This method should be called after user has logged in
     to create a new BEUserSession object that keeps track of the
-    duration of user's session in billentry
+    duration of user's session in web
     """
     s = Session()
     be_user_session = BEUserSession(session_start=datetime.utcnow(),

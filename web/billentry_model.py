@@ -26,7 +26,7 @@ class BillEntryUser(Base, UserMixin):
         from brokerage import config
         # the anonymous user should never be created when authentication is
         # turned on
-        assert config.get('billentry', 'disable_authentication') == True
+        assert config.get('web', 'disable_authentication') == True
         if cls._anonymous_user is None:
             cls._anonymous_user = BillEntryUser(email='anonymous@example.com')
             cls._anonymous_user.is_anonymous = lambda: True
