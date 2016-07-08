@@ -1,7 +1,6 @@
 '''
-Main file for Bill Entry (Flask web app for y UI).utility bill data entry).
-This file contains the main 'Flask' object and code for things that affect the
-application as a whole, such as authentication.
+Main file for Flask web UI. This file contains the main 'Flask' object and
+code for things that affect the application as a whole, such as authentication.
 
 Here are some recommendations on how to structure a Python/Flask project.
 http://as.ynchrono.us/2007/12/filesystem-structure-of-python-project_21.html
@@ -312,7 +311,7 @@ def log_error(exception_name, traceback):
     # errors stacktrace in a logfile
     token = str(uuid.uuid4())
     logger = logging.getLogger(LOG_NAME)
-    logger.exception('Exception in BillEntry (Token: %s): ', token)
+    logger.exception('Exception (Token: %s): ', token)
     error_message = "Internal Server Error: %s, Error Token: " \
                     "<b>%s</b>" % (exception_name, token)
     if config.get('web', 'show_traceback_on_error'):
