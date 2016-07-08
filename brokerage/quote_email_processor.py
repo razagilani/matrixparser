@@ -236,7 +236,6 @@ class QuoteEmailProcessor(object):
         quote_parser.load_file(quote_file, file_name, matrix_format)
         quote_parser.validate()
 
-        validation_error_cnt = 0
         # read and insert quotes in groups of 'BATCH_SIZE'
         generator = quote_parser.extract_quotes()
         while True:
@@ -244,20 +243,8 @@ class QuoteEmailProcessor(object):
             for quote in islice(generator, self.BATCH_SIZE):
                 if altitude_supplier is not None:
                     quote.supplier_id = altitude_supplier.company_id
-
-                try:
-                    quote.validate()
-                    quote_list.append(quote)
-                except ValidationError as e:
-                    validation_error_cnt += 1
-                    self.logger.error('Validation error %s: Price=%s, '
-                                      'Earliest_Contact_Start_Date=%s, '
-                                      'Latest_Contract_Start_Date=%s, '
-                                      'Valid_From=%s Valid_Until=%s' %
-                                      (e, str(quote.price), quote.start_from,
-                                       quote.start_until, quote.valid_from,
-                                       quote.valid_until))
-
+                quote.validate()
+                quote_list.append(quote)
             self._quote_dao.insert_quotes(quote_list)
             count = quote_parser.get_count()
             self.logger.debug('%s quotes so far' % count)
@@ -340,7 +327,7 @@ class QuoteEmailProcessor(object):
                 continue
             except:
                 self._quote_dao.rollback()
-                message = 'Error when processing attachment "%s":\n%s' % (
+                message = 'Error when processing attachment "%s" from :\n%s' % (
                     file_name, traceback.format_exc())
                 # TODO: is logging this here redundant?
                 self.logger.error(message)
@@ -362,9 +349,10 @@ class QuoteEmailProcessor(object):
         # if all files were skipped, or at least one file was read but 0
         # quotes were in them, it's considered an error
         if files_count == 0:
-            raise NoFilesError('No files were read')
+            raise NoFilesError('No files were read from %s' % supplier.name)
         elif quotes_count == 0:
-            raise NoQuotesError('Files contained no quotes')
+            raise NoQuotesError(
+                'Files from %s contained no quotes' % supplier.name)
 
         self.logger.info('Finished email from %s' % supplier)
         AltitudeSession.remove()
