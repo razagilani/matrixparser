@@ -327,8 +327,9 @@ class QuoteEmailProcessor(object):
                 continue
             except:
                 self._quote_dao.rollback()
-                message = 'Error when processing attachment "%s" from :\n%s' % (
-                    file_name, traceback.format_exc())
+                message = 'Error when processing attachment "%s" from ' \
+                          '%s:\n%s' % (
+                              file_name, supplier.name, traceback.format_exc())
                 # TODO: is logging this here redundant?
                 self.logger.error(message)
                 error_messages.append(message)
