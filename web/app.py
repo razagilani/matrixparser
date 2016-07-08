@@ -27,7 +27,7 @@ from flask.ext.principal import identity_changed, Identity, AnonymousIdentity, \
 from flask_oauth import OAuth, OAuthException
 
 from web import admin
-from web.billentry_model import BillEntryUser, Role, BEUserSession
+from web.web_model import User, Role, UserSession
 from web.common import get_bcrypt_object
 from brokerage.model import Session
 from brokerage import init_config
@@ -87,7 +87,7 @@ app.permanent_session_lifetime = timedelta(
     seconds=config.get('web', 'timeout'))
 
 if app.config['LOGIN_DISABLED']:
-    login_manager.anonymous_user = BillEntryUser.get_anonymous_user
+    login_manager.anonymous_user = User.get_anonymous_user
 
 @principals.identity_loader
 def load_identity_for_anonymous_user():
@@ -115,7 +115,7 @@ def on_identity_loaded(sender, identity):
 
 @login_manager.user_loader
 def load_user(id):
-    user = Session().query(BillEntryUser).filter_by(id=id).first()
+    user = Session().query(User).filter_by(id=id).first()
     return user
 
 
@@ -149,7 +149,7 @@ def oauth2callback(resp):
     # (with a random password) if there is no existing user with
     # the same email address.
     user_email = create_user_in_db(resp['access_token'])
-    user = Session().query(BillEntryUser).filter_by(email=user_email).first()
+    user = Session().query(User).filter_by(email=user_email).first()
     # start keeping track of user session
     start_user_session(user)
     return redirect(next_url)
@@ -178,7 +178,7 @@ def create_user_in_db(access_token):
     userInfo = json.loads(userInfoFromGoogle)
     s = Session()
     session['email'] = userInfo['email']
-    user = s.query(BillEntryUser).filter_by(email=userInfo['email']).first()
+    user = s.query(User).filter_by(email=userInfo['email']).first()
     # if user coming through google auth is not already present in local
     # database, then create it in the local db and assign the 'admin' role
     # to the user for proividing access to the Admin UI.
@@ -188,8 +188,8 @@ def create_user_in_db(access_token):
         wordfile = xp.locate_wordfile()
         mywords = xp.generate_wordlist(wordfile=wordfile, min_length=6,
                                        max_length=8)
-        user = BillEntryUser(email=session['email'],
-            password=get_hashed_password(
+        user = User(email=session['email'],
+                    password=get_hashed_password(
                 xp.generate_xkcdpassword(mywords, acrostic="face")))
         # add user to the admin role
         admin_role = s.query(Role).filter_by(name='admin').first()
@@ -324,7 +324,7 @@ def log_error(exception_name, traceback):
 def locallogin():
     email = request.form['email']
     password = request.form['password']
-    user = Session().query(BillEntryUser).filter_by(email=email).first()
+    user = Session().query(User).filter_by(email=email).first()
     if user is None:
         flash('Username or Password is invalid', 'error')
         return redirect(url_for('login_page'))
@@ -352,13 +352,13 @@ def get_hashed_password(plain_text_password):
 
 def start_user_session(beuser):
     """ This method should be called after user has logged in
-    to create a new BEUserSession object that keeps track of the
+    to create a new UserSession object that keeps track of the
     duration of user's session in web
     """
     s = Session()
-    be_user_session = BEUserSession(session_start=datetime.utcnow(),
-                                    last_request=datetime.utcnow(),
-                                    beuser=beuser)
+    be_user_session = UserSession(session_start=datetime.utcnow(),
+                                  last_request=datetime.utcnow(),
+                                  beuser=beuser)
     s.add(be_user_session)
     s.commit()
 

@@ -3,7 +3,7 @@
 Can also be run with gunicorn with "gunicorn run_web"
 """
 from brokerage import initialize
-from billentry import application
+from web import application
 initialize()
 
 if __name__ == '__main__':
