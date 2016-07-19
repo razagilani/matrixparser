@@ -270,8 +270,11 @@ class GEEMatrixParser(QuoteParser):
                     price = self.reader.get(sheet, price_row, price_col, object)
 
                     if isinstance(price, float):
-                        quote = GEEPriceQuote(self, sheet, price_row,
-                            price_col, is_onr_sheet).evaluate()
+                        try:
+                            quote = GEEPriceQuote(self, sheet, price_row,
+                                price_col, is_onr_sheet).evaluate()
+                        except ValidationError as e:
+                            continue
 
                         if 'custom' not in quote.rate_class_alias.lower():
                             quote = quote.clone()

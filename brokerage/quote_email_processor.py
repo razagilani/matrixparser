@@ -1,4 +1,5 @@
 import email
+from email.header import decode_header
 import logging
 import re
 import traceback
@@ -8,7 +9,6 @@ from itertools import islice
 import statsd
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
-from brokerage.model import Company
 from brokerage.exceptions import MatrixError, ValidationError
 from brokerage.model import AltitudeSession, Session, Supplier, Company
 from util.email_util import get_attachments
@@ -21,28 +21,35 @@ LOG_NAME = 'read_quotes'
 QUOTE_METRIC_FORMAT = 'quote.matrix.%(suppliername)s'
 EMAIL_METRIC_NAME = 'quote.email'
 
+
 class QuoteProcessingError(MatrixError):
     pass
+
 
 class EmailError(QuoteProcessingError):
     """Email was invalid.
     """
+
 
 class UnknownSupplierError(QuoteProcessingError):
     """Could not match an email to a supplier, or more than one supplier
     matched it.
     """
 
+
 class UnknownFormatError(QuoteProcessingError):
     """Could not match a file a matrix format, or more than one format
     matched it.
     """
 
+
 class NoFilesError(QuoteProcessingError):
     """There were no attachments or all were skipped."""
 
+
 class NoQuotesError(QuoteProcessingError):
     """No quotes were read."""
+
 
 class MultipleErrors(QuoteProcessingError):
     """Used to report a series of one or more error messages from processing
@@ -77,7 +84,7 @@ class QuoteDAO(object):
         corresponding to the email in the main database, and another with the
         same name in the Altitude database.
 
-        :param from_addr: regular expression string for email sender address
+        :param to_addr: email recipient address
 
         :return: core.model.Supplier representing the supplier table int the
         main database, brokerage.model.Company representing the
@@ -116,10 +123,10 @@ class QuoteDAO(object):
         :param file_name: name of the matrix file
         :return: brokerage.model.MatrixFormat
         """
-        matching_formats = [f for f in supplier.matrix_formats
-                            if f.matrix_attachment_name is None
-                            or re.match(f.matrix_attachment_name, file_name,
-                                        re.IGNORECASE | re.DOTALL)]
+        matching_formats = [f for f in supplier.matrix_formats if
+                            f.matrix_attachment_name is None or
+                            re.match(f.matrix_attachment_name, file_name,
+                                     re.IGNORECASE | re.DOTALL)]
         if len(matching_formats) == 0:
             raise UnknownFormatError('No formats matched file name "%s"' %
                                      file_name)
@@ -179,7 +186,7 @@ class QuoteEmailProcessor(object):
         handles it.
         :param quote_dao: QuoteDAO object for handling database access.
         param s3_connection: boto.s3.S3Connection
-        :param bucket_name: name of S3 bucket where quote files will be
+        :param s3_bucket_name: name of S3 bucket where quote files will be
         stored (string).
         """
         self.logger = logging.getLogger(LOG_NAME)
@@ -229,7 +236,6 @@ class QuoteEmailProcessor(object):
         quote_parser.load_file(quote_file, file_name, matrix_format)
         quote_parser.validate()
 
-        validation_error_cnt = 0
         # read and insert quotes in groups of 'BATCH_SIZE'
         generator = quote_parser.extract_quotes()
         while True:
@@ -237,26 +243,12 @@ class QuoteEmailProcessor(object):
             for quote in islice(generator, self.BATCH_SIZE):
                 if altitude_supplier is not None:
                     quote.supplier_id = altitude_supplier.company_id
-
-                try:
-                    quote.validate()
-                    quote_list.append(quote)
-                except ValidationError as e:
-                    validation_error_cnt += 1
-                    self.logger.error('Validation error %s: Price=%s, '
-                        'Earliest_Contact_Start_Date=%s, '
-                        'Latest_Contract_Start_Date=%s, '
-                        'Valid_From=%s Valid_Until=%s' % 
-                        (e, str(quote.price), quote.start_from,
-                         quote.start_until, quote.valid_from,
-                         quote.valid_until))
-
+                quote.validate()
+                quote_list.append(quote)
             self._quote_dao.insert_quotes(quote_list)
             count = quote_parser.get_count()
             self.logger.debug('%s quotes so far' % count)
             if quote_list == []:
-                self.logger.info('Completing with %d quote error(s)' %
-                    validation_error_cnt)
                 return quote_parser
 
     def _store_quote_file(self, file_name, file_content):
@@ -333,10 +325,11 @@ class QuoteEmailProcessor(object):
                 self.logger.warn(('Skipped attachment from %s with unexpected '
                                  'name: "%s"') % (supplier.name, file_name))
                 continue
-            except Exception as e:
+            except:
                 self._quote_dao.rollback()
-                message = 'Error when processing attachment "%s":\n%s' % (
-                    file_name, traceback.format_exc())
+                message = 'Error when processing attachment "%s" from ' \
+                          '%s:\n%s' % (
+                              file_name, supplier.name, traceback.format_exc())
                 # TODO: is logging this here redundant?
                 self.logger.error(message)
                 error_messages.append(message)
@@ -357,9 +350,10 @@ class QuoteEmailProcessor(object):
         # if all files were skipped, or at least one file was read but 0
         # quotes were in them, it's considered an error
         if files_count == 0:
-            raise NoFilesError('No files were read')
+            raise NoFilesError('No files were read from %s' % supplier.name)
         elif quotes_count == 0:
-            raise NoQuotesError('Files contained no quotes')
+            raise NoQuotesError(
+                'Files from %s contained no quotes' % supplier.name)
 
         self.logger.info('Finished email from %s' % supplier)
         AltitudeSession.remove()

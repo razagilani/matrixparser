@@ -20,42 +20,45 @@ class AmerigreenMatrixParser(QuoteParser):
     # solution: open in Excel and re-save in "xls" format.
     reader = SpreadsheetReader(formats.xls)
 
-    HEADER_ROW = 25
-    QUOTE_START_ROW = 26
+    HEADER_ROW = 31
+    QUOTE_START_ROW = 32
     UTILITY_COL = 'C'
     STATE_COL = 'D'
-    TERM_COL = 'E'
-    START_MONTH_COL = 'F'
+    TERM_COL = 'F'
+    START_MONTH_COL = 'E'
     START_DAY_COL = 'G'
     PRICE_COL = 'N'
     ROUNDING_DIGITS = 4
 
     # Amerigreen builds in the broker fee to the prices, so it must be
     # subtracted from the prices shown
-    BROKER_FEE_CELL = (22, 'F')
+    BROKER_FEE_CELL = (27, 'F')
 
     EXPECTED_SHEET_TITLES = None
     EXPECTED_CELLS = [
         (0, 11, 'C', 'AMERIgreen Energy Daily Matrix Pricing'),
         (0, 13, 'C', "Today's Date:"),
-        (0, 15, 'C', 'The Matrix Rates include a \$0.0200/therm Broker Fee'),
-        (0, 15, 'J', 'All rates are quoted at the burner tip and include LDC '
+        (0, 15, 'C', 'The Matrix Rates include a \$0.0300/therm Broker Fee'),
+        (0, 19, 'c', 'All rates are quoted at the burner tip and include LDC '
                      'Line Loss fees'),
-        (0, 16, 'J', 'Quotes are valid through the end of the business day'),
-        (0, 17, 'J',
-         'Valid for accounts with annual volume of up to 50,000 therms'),
-        (0, 19, 'J',
+        (0, 21, 'C', 'Quotes are valid through the end of the business day'),
+        (0, 22, 'C',
+         'Valid for accounts with annual volume of up to 100,000 therms'),
+        (0, 24, 'C',
          "O&R and PECO rates are in Ccf's, all others are in Therms"),
         (0, HEADER_ROW, 'C', 'LDC'),
         (0, HEADER_ROW, 'D', 'State'),
-        (0, HEADER_ROW, 'E', 'Term \(Months\)'),
-        (0, HEADER_ROW, 'F', 'Start Month'),
-        (0, HEADER_ROW, 'G', 'Start Day'),
-        (0, HEADER_ROW, 'J', 'Broker Fee'),
-        (0, HEADER_ROW, 'K', "Add'l Fee"),
-        (0, HEADER_ROW, 'L', "Total Fee"),
-        (0, HEADER_ROW, 'M', "Heat"),
-        (0, HEADER_ROW, 'N', "Flat"),
+        (0, HEADER_ROW, 'E', 'Start Month'),
+        (0, HEADER_ROW, 'F', 'Term \(Months\)'),
+        (0, HEADER_ROW, 'G', 'Fixed Heat'),
+        (0, HEADER_ROW, 'H', 'Fixed Flat'),
+        (0, HEADER_ROW, 'I', "Fixed Heat"),
+        (0, HEADER_ROW, 'J', "Fixed Flat"),
+        (0, HEADER_ROW, 'K', "Broker Fee"),
+        (0, HEADER_ROW, 'L', "Add'l Fee"),
+        (0, HEADER_ROW, 'M', "Total Fee"),
+        (0, HEADER_ROW, 'N', "Heat"),
+        (0, HEADER_ROW, 'O', "Flat"),
     ]
 
     date_getter = FileNameDateGetter()
@@ -85,11 +88,7 @@ class AmerigreenMatrixParser(QuoteParser):
 
             start_from = excel_number_to_datetime(
                 self.reader.get(0, row, self.START_MONTH_COL, float))
-            start_day_str = self.reader.get(0, row, self.START_DAY_COL,
-                                            basestring)
-            _assert_true(start_day_str in ('1st of the Month',
-                                           'On Cycle Read Date'))
-            # TODO: does "1st of the month" really mean starting only on one day?
+
             start_until = start_from + timedelta(days=1)
 
             price = self.reader.get(0, row, self.PRICE_COL, float) - broker_fee
