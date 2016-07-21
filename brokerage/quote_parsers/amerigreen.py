@@ -20,45 +20,37 @@ class AmerigreenMatrixParser(QuoteParser):
     # solution: open in Excel and re-save in "xls" format.
     reader = SpreadsheetReader(formats.xls)
 
-    HEADER_ROW = 31
-    QUOTE_START_ROW = 32
+    HEADER_ROW = 28
+    QUOTE_START_ROW = 29
     UTILITY_COL = 'C'
     STATE_COL = 'D'
     TERM_COL = 'F'
     START_MONTH_COL = 'E'
     START_DAY_COL = 'G'
-    PRICE_COL = 'N'
+    PRICE_COL = 'O'
     ROUNDING_DIGITS = 4
 
     # Amerigreen builds in the broker fee to the prices, so it must be
     # subtracted from the prices shown
-    BROKER_FEE_CELL = (27, 'F')
+    BROKER_FEE_CELL = (25, 'F')
 
     EXPECTED_SHEET_TITLES = None
     EXPECTED_CELLS = [
         (0, 11, 'C', 'AMERIgreen Energy Daily Matrix Pricing'),
         (0, 13, 'C', "Today's Date:"),
-        (0, 15, 'C', 'The Matrix Rates include a \$0.0300/therm Broker Fee'),
-        (0, 19, 'c', 'All rates are quoted at the burner tip and include LDC '
-                     'Line Loss fees'),
-        (0, 21, 'C', 'Quotes are valid through the end of the business day'),
-        (0, 22, 'C',
+        (0, 15, 'C', 'The Matrix Rates do not include a Broker Fee'),
+        (0, 19, 'c', 'New Jersey Rates Include SUT'),
+        (0, 20, 'C', 'Quotes are valid through the end of the business day'),
+        (0, 21, 'C',
          'Valid for accounts with annual volume of up to 100,000 therms'),
-        (0, 24, 'C',
+        (0, 23, 'C',
          "O&R and PECO rates are in Ccf's, all others are in Therms"),
         (0, HEADER_ROW, 'C', 'LDC'),
         (0, HEADER_ROW, 'D', 'State'),
         (0, HEADER_ROW, 'E', 'Start Month'),
         (0, HEADER_ROW, 'F', 'Term \(Months\)'),
-        (0, HEADER_ROW, 'G', 'Fixed Heat'),
-        (0, HEADER_ROW, 'H', 'Fixed Flat'),
-        (0, HEADER_ROW, 'I', "Fixed Heat"),
-        (0, HEADER_ROW, 'J', "Fixed Flat"),
-        (0, HEADER_ROW, 'K', "Broker Fee"),
-        (0, HEADER_ROW, 'L', "Add'l Fee"),
-        (0, HEADER_ROW, 'M', "Total Fee"),
-        (0, HEADER_ROW, 'N', "Heat"),
-        (0, HEADER_ROW, 'O', "Flat"),
+        (0, HEADER_ROW, 'O', "Heat"),
+        (0, HEADER_ROW, 'P', "Flat"),
     ]
 
     date_getter = FileNameDateGetter()
