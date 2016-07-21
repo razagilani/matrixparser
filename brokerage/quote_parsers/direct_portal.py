@@ -22,9 +22,8 @@ class DirectPortalMatrixParser(QuoteParser):
     QUOTE_START_ROW = 2
     RCA_COLS = ['B', 'C', 'D']
     TERM_COL = 'E'
-    OFFER_TYPE_COL = 'F'
-    PRICE_COL = 'G'
-    UNIT_COL = 'H'
+    PRICE_COL = 'F'
+    UNIT_COL = 'G'
 
     EXPECTED_SHEET_TITLES = ['Prices', 'Utility Abbreviations']
     EXPECTED_CELLS = [
@@ -33,10 +32,9 @@ class DirectPortalMatrixParser(QuoteParser):
         (0, HEADER_ROW, 'C', 'LDC'),
         (0, HEADER_ROW, 'D', 'Zone'),
         (0, HEADER_ROW, 'E', 'Term'),
-        (0, HEADER_ROW, 'F', 'Offer Type'),
-        (0, HEADER_ROW, 'G', 'Rate Amt'),
-        (0, HEADER_ROW, 'H', 'Unit'),
-        (0, HEADER_ROW, 'I', 'Cancel Fee'),
+        (0, HEADER_ROW, 'F', 'Rate Amt'),
+        (0, HEADER_ROW, 'G', 'Unit'),
+        (0, HEADER_ROW, 'H', 'Cancel Fee'),
     ]
 
     date_getter = FileNameDateGetter()
@@ -51,10 +49,6 @@ class DirectPortalMatrixParser(QuoteParser):
         self._valid_until = self._valid_from + timedelta(days=15)
 
         for row in xrange(self.QUOTE_START_ROW, self.reader.get_height(0) + 1):
-            # skip "NEST" rows, related to Nest thermostat
-            if self.reader.get(0, row, self.OFFER_TYPE_COL,
-                               basestring) == 'NEST':
-                continue
 
             # different volume limits and interpretation of price unit for
             # electric and gas quotes. also different gas quotes have
@@ -89,7 +83,7 @@ class DirectPortalMatrixParser(QuoteParser):
                 [rca_prefix] + ['' if x is None else x for x in rca_data])
             term = self.reader.get(0, row, self.TERM_COL, int)
             price = self.reader.get(0, row, self.PRICE_COL, float) * \
-                    target_unit / expected_unit
+                    float(target_unit / expected_unit)
 
             # TODO: quotes are temporarily duplicated 4 times as a workaround
             # for a bug where Team Portal cannot show quotes that started
