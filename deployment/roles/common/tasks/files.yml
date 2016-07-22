@@ -15,7 +15,7 @@
 
 - name : init script for web server process
   become: true
-  template: src=roles/common/templates/gunicorn_with_virtualenv.sh dest=/etc/init.d/gunicorn_with_virtualenv mode=755
+  template: src=roles/common/templates/gunicorn_with_virtualenv.sh dest=/etc/init.d/gunicorn_with_virtualenv mode=744
 
 #
 # Configuration for postfix (receiving emails)
