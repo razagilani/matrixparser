@@ -17,6 +17,10 @@
   become: true
   template: src=roles/common/templates/gunicorn_with_virtualenv.sh dest=/etc/init.d/gunicorn_with_virtualenv mode=744
 
+- name : restart Gunicorn service
+  become: true
+  service: name=gunicorn_with_virtualenv state=restarted
+
 #
 # Configuration for postfix (receiving emails)
 #
