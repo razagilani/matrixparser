@@ -9,7 +9,7 @@ from flask.ext.admin import AdminIndexView, expose, Admin
 from flask.ext.admin.contrib.sqla import ModelView
 from flask.ext.principal import Permission, RoleNeed
 
-from billentry.common import get_bcrypt_object
+from web.common import get_bcrypt_object
 from brokerage.model import MatrixFormat
 from brokerage.model import Supplier, Session, MatrixFormat
 
@@ -22,7 +22,7 @@ class MyAdminIndexView(AdminIndexView):
     @expose('/')
     def index(self):
         from brokerage import config
-        if config.get('billentry', 'disable_authentication'):
+        if config.get('web', 'disable_authentication'):
                 return super(MyAdminIndexView, self).index()
         if login.current_user.is_authenticated():
             with admin_permission.require():
@@ -33,7 +33,7 @@ class MyAdminIndexView(AdminIndexView):
 class LoginModelView(ModelView):
     def is_accessible(self):
         from brokerage import config
-        if config.get('billentry', 'disable_authentication'):
+        if config.get('web', 'disable_authentication'):
             return True
         return login.current_user.is_authenticated()
 

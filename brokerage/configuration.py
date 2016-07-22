@@ -78,7 +78,7 @@ class monitoring(Schema):
     metrics_host = String()
     metrics_port = TCPPort()
 
-class billentry(Schema):
+class web(Schema):
     google_client_id = String()
     google_client_secret = String()
     google_user_info_url = URL()
