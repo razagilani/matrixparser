@@ -1,4 +1,4 @@
-"""Miscellaneous helper functions/classes for Bill Entry.
+"""Miscellaneous helper functions/classes.
 
 This module's name comes from the recommended project structure at
 http://flask-restful.readthedocs.org/en/0.3.1/intermediate-usage.html#project-structure

@@ -1,7 +1,6 @@
 '''
-Main file for Bill Entry (Flask web app for y UI).utility bill data entry).
-This file contains the main 'Flask' object and code for things that affect the
-application as a whole, such as authentication.
+Main file for Flask web UI. This file contains the main 'Flask' object and
+code for things that affect the application as a whole, such as authentication.
 
 Here are some recommendations on how to structure a Python/Flask project.
 http://as.ynchrono.us/2007/12/filesystem-structure-of-python-project_21.html
@@ -26,13 +25,13 @@ from flask.ext.principal import identity_changed, Identity, AnonymousIdentity, \
     Principal, RoleNeed, identity_loaded, UserNeed, PermissionDenied
 from flask_oauth import OAuth, OAuthException
 
-from billentry import admin
-from billentry.billentry_model import BillEntryUser, Role, BEUserSession
-from billentry.common import get_bcrypt_object
+from web import admin
+from web.web_model import User, Role, UserSession
+from web.common import get_bcrypt_object
 from brokerage.model import Session
 from brokerage import init_config
 
-LOG_NAME = 'billentry'
+LOG_NAME = 'web'
 
 app = Flask(__name__, static_url_path="")
 bcrypt = get_bcrypt_object()
@@ -57,23 +56,23 @@ if config is None:
 
 oauth = OAuth()
 google = oauth.remote_app('google',
-    base_url=config.get('billentry', 'base_url'),
-    authorize_url=config.get('billentry', 'authorize_url'),
-    request_token_url=config.get('billentry', 'request_token_url'),
+    base_url=config.get('web', 'base_url'),
+    authorize_url=config.get('web', 'authorize_url'),
+    request_token_url=config.get('web', 'request_token_url'),
     request_token_params={
-        'scope': config.get('billentry', 'request_token_params_scope'),
-        'response_type': config.get('billentry',
+        'scope': config.get('web', 'request_token_params_scope'),
+        'response_type': config.get('web',
                                     'request_token_params_resp_type'),
-        'hd': config.get('billentry', 'authorized_domain')},
-    access_token_url=config.get('billentry', 'access_token_url'),
-    access_token_method=config.get('billentry', 'access_token_method'),
-    access_token_params={'grant_type': config.get('billentry',
+        'hd': config.get('web', 'authorized_domain')},
+    access_token_url=config.get('web', 'access_token_url'),
+    access_token_method=config.get('web', 'access_token_method'),
+    access_token_params={'grant_type': config.get('web',
                                                   'access_token_params_grant_type')},
-    consumer_key=config.get('billentry', 'google_client_id'),
-    consumer_secret=config.get('billentry', 'google_client_secret'))
+    consumer_key=config.get('web', 'google_client_id'),
+    consumer_secret=config.get('web', 'google_client_secret'))
 
-app.secret_key = config.get('billentry', 'secret_key')
-app.config['LOGIN_DISABLED'] = config.get('billentry', 'disable_authentication')
+app.secret_key = config.get('web', 'secret_key')
+app.config['LOGIN_DISABLED'] = config.get('web', 'disable_authentication')
 
 ############
 # KVSession
@@ -84,14 +83,14 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 principals = Principal(app)
 app.permanent_session_lifetime = timedelta(
-    seconds=config.get('billentry', 'timeout'))
+    seconds=config.get('web', 'timeout'))
 
 if app.config['LOGIN_DISABLED']:
-    login_manager.anonymous_user = BillEntryUser.get_anonymous_user
+    login_manager.anonymous_user = User.get_anonymous_user
 
 @principals.identity_loader
 def load_identity_for_anonymous_user():
-    if config.get('billentry', 'disable_authentication'):
+    if config.get('web', 'disable_authentication'):
         identity = AnonymousIdentity()
         identity.provides.add(RoleNeed('admin'))
         return identity
@@ -115,7 +114,7 @@ def on_identity_loaded(sender, identity):
 
 @login_manager.user_loader
 def load_user(id):
-    user = Session().query(BillEntryUser).filter_by(id=id).first()
+    user = Session().query(User).filter_by(id=id).first()
     return user
 
 
@@ -149,7 +148,7 @@ def oauth2callback(resp):
     # (with a random password) if there is no existing user with
     # the same email address.
     user_email = create_user_in_db(resp['access_token'])
-    user = Session().query(BillEntryUser).filter_by(email=user_email).first()
+    user = Session().query(User).filter_by(email=user_email).first()
     # start keeping track of user session
     start_user_session(user)
     return redirect(next_url)
@@ -163,7 +162,7 @@ def index():
 
 def create_user_in_db(access_token):
     headers = {'Authorization': 'OAuth ' + access_token}
-    req = Request(config.get('billentry', 'google_user_info_url'), None,
+    req = Request(config.get('web', 'google_user_info_url'), None,
                   headers)
     try:
         # get info about currently logged in user
@@ -178,7 +177,7 @@ def create_user_in_db(access_token):
     userInfo = json.loads(userInfoFromGoogle)
     s = Session()
     session['email'] = userInfo['email']
-    user = s.query(BillEntryUser).filter_by(email=userInfo['email']).first()
+    user = s.query(User).filter_by(email=userInfo['email']).first()
     # if user coming through google auth is not already present in local
     # database, then create it in the local db and assign the 'admin' role
     # to the user for proividing access to the Admin UI.
@@ -188,8 +187,8 @@ def create_user_in_db(access_token):
         wordfile = xp.locate_wordfile()
         mywords = xp.generate_wordlist(wordfile=wordfile, min_length=6,
                                        max_length=8)
-        user = BillEntryUser(email=session['email'],
-            password=get_hashed_password(
+        user = User(email=session['email'],
+                    password=get_hashed_password(
                 xp.generate_xkcdpassword(mywords, acrostic="face")))
         # add user to the admin role
         admin_role = s.query(Role).filter_by(name='admin').first()
@@ -312,10 +311,10 @@ def log_error(exception_name, traceback):
     # errors stacktrace in a logfile
     token = str(uuid.uuid4())
     logger = logging.getLogger(LOG_NAME)
-    logger.exception('Exception in BillEntry (Token: %s): ', token)
+    logger.exception('Exception (Token: %s): ', token)
     error_message = "Internal Server Error: %s, Error Token: " \
                     "<b>%s</b>" % (exception_name, token)
-    if config.get('billentry', 'show_traceback_on_error'):
+    if config.get('web', 'show_traceback_on_error'):
         error_message += "<br><br><pre>" + traceback.format_exc() + "</pre>"
     return error_message
 
@@ -324,7 +323,7 @@ def log_error(exception_name, traceback):
 def locallogin():
     email = request.form['email']
     password = request.form['password']
-    user = Session().query(BillEntryUser).filter_by(email=email).first()
+    user = Session().query(User).filter_by(email=email).first()
     if user is None:
         flash('Username or Password is invalid', 'error')
         return redirect(url_for('login_page'))
@@ -352,13 +351,13 @@ def get_hashed_password(plain_text_password):
 
 def start_user_session(beuser):
     """ This method should be called after user has logged in
-    to create a new BEUserSession object that keeps track of the
-    duration of user's session in billentry
+    to create a new UserSession object that keeps track of the
+    duration of user's session in web
     """
     s = Session()
-    be_user_session = BEUserSession(session_start=datetime.utcnow(),
-                                    last_request=datetime.utcnow(),
-                                    beuser=beuser)
+    be_user_session = UserSession(session_start=datetime.utcnow(),
+                                  last_request=datetime.utcnow(),
+                                  beuser=beuser)
     s.add(be_user_session)
     s.commit()
 

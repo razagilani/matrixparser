@@ -20,7 +20,7 @@ altitude_uri = {{ altitude_db_uri }}
 echo = false
 superuser_name = postgres_{{ env }}
 
-[billentry]
+[web]
 google_client_id = {{ google_client_id }}
 google_client_secret = {{ google_client_secret }}
 google_user_info_url = https://www.googleapis.com/oauth2/v1/userinfo
