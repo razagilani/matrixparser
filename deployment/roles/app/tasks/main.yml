@@ -38,5 +38,9 @@
 - name: Add line to activate virtualenv in bashrc
   lineinfile: dest=/home/{{ app_user }}/.bashrc line="source /home/{{ app_user }}/env_vars.sh"
 
+- name : restart Gunicorn service
+  become: true
+  service: name=gunicorn_with_virtualenv state=restarted
+
 - name: Add deployment to deployment log
   shell: echo `date` {{ hg_username }} {{ hg_repo }} {{ revision }} >> /home/{{ app_user }}/deployment_log
