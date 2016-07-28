@@ -302,6 +302,10 @@ class TestQuoteEmailProcessor(TestCase):
         self.assertEqual(1, self.quote_parser.load_file.call_count)
         self.assertEqual(self.quote_parser.load_file.call_args_list[0][0][0]
                          .getvalue(), contents)
+        self.assertEqual(self.quote_parser.load_file.call_args_list[0][0][1]
+                         , self.message['Subject'])
+        self.assertEqual(self.quote_parser.load_file.call_args_list[0][0][2]
+                         , self.format_1)
         self.quote_parser.extract_quotes.assert_called_once_with()
         self.assertEqual(0, self.quote_dao.rollback.call_count)
         self.assertEqual(1, self.quote_dao.commit.call_count)
