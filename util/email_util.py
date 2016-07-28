@@ -92,36 +92,27 @@ def get_attachments(message):
     """Get attachments from a MIME email body.
     :param message: some object from the 'email' module, can't tell what type
     it is
-    :return: list of (name, contents) tuples containing the name and contents
-    of each attachment as strings.
+    :return: list of (name, contents) tuples containing the name, contents
+    and a boolean False for each attachment.
     """
     result = []
+    # A boolean that indicates that the file_contents are from an attachment
+    # in email and not from the email body
+    match_email_body = False
     for part in message.walk():
         if part.get_content_maintype() == 'multipart':
             continue
-        cdispo = part.get('Content-Disposition')
-        ctype = part.get_content_type()
-        if cdispo is None:
-            continue
-
-        if ctype == 'text/plain' and 'attachment' not in str(cdispo):
-            file_content = part.get_payload(decode=True)  # decode
-            file_name = message['subject']
-            email_body = True
-            result.append((file_name, file_content, email_body))
+        if part.get('Content-Disposition') is None:
             continue
         # decode_header is used to decode base64 encoded attachment name
         # of the format =?utf-8?B?RGFpbHkgTWF0cml4IFByaWNlLnhscw==?=
         # according to  RFC 2047. This call has no effect if the
         # attachment name is not base64 encoded
-
-        # skip any text/plain (txt) attachments
         file_name = decode_header(part.get_filename())[0][0]
         if file_name == '':
             continue
         # this part is an attachment
         file_content = part.get_payload(decode=True)
-        email_body = False
-        result.append((file_name, file_content, email_body))
+        result.append((file_name, file_content, match_email_body))
     return result
 

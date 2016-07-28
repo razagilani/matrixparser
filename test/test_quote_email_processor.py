@@ -34,8 +34,9 @@ class TestQuoteEmailProcessor(TestCase):
         self.supplier = Supplier(id=1, name='The Supplier')
         self.format_1 = MatrixFormat(matrix_format_id=1)
         self.quote_dao = Mock(autospec=QuoteDAO)
+        self.altitude_supplier = Company(company_id=2, name='The Supplier')
         self.quote_dao.get_supplier_objects_for_message.return_value = (
-            self.supplier, Company(company_id=2, name='The Supplier'))
+            self.supplier, self.altitude_supplier)
         self.quote_dao.get_matrix_format_for_file.return_value = self.format_1
 
         self.quotes = [Mock(autospec=Quote), Mock(autospec=Quote)]
@@ -229,9 +230,9 @@ class TestQuoteEmailProcessor(TestCase):
             with self.assertRaises(MultipleErrors) as e:
                 self.qep.process_email(f)
 
-            # out of 2 files, one failed with a ValidationError
-            self.assertEqual(2, e.exception.file_count)
-            self.assertEqual(1, len(e.exception.messages))
+            # out of 3 files, 2 failed with a ValidationError
+            self.assertEqual(3, e.exception.file_count)
+            self.assertEqual(2, len(e.exception.messages))
             self.assertIn('ValidationError', e.exception.messages[0])
 
         # 1st file fails so its transaction gets rolled back; 2nd file
@@ -239,20 +240,20 @@ class TestQuoteEmailProcessor(TestCase):
         self.assertEqual(
             1, self.quote_dao.get_supplier_objects_for_message.call_count)
         self.assertEqual(
-            2, self.quote_dao.get_matrix_format_for_file.call_count)
-        self.assertEqual(2, self.quote_dao.begin.call_count)
+            3, self.quote_dao.get_matrix_format_for_file.call_count)
+        self.assertEqual(3, self.quote_dao.begin.call_count)
         self.assertEqual(1 * len(self.quotes),
                          self.quote_dao.insert_quotes.call_count)
-        self.assertEqual(2, self.quote_parser.load_file.call_count)
-        self.assertEqual(2, self.quote_parser.extract_quotes.call_count)
-        self.assertEqual(1, self.quote_dao.rollback.call_count)
+        self.assertEqual(3, self.quote_parser.load_file.call_count)
+        self.assertEqual(3, self.quote_parser.extract_quotes.call_count)
+        self.assertEqual(2, self.quote_dao.rollback.call_count)
         self.assertEqual(1, self.quote_dao.commit.call_count)
 
         # 2 files should be uploaded to s3
         # (not checking file names or contents)
-        self.assertEqual(2, self.s3_connection.get_bucket.call_count)
-        self.assertEqual(2, self.s3_bucket.new_key.call_count)
-        self.assertEqual(2, self.s3_key.set_contents_from_string.call_count)
+        self.assertEqual(3, self.s3_connection.get_bucket.call_count)
+        self.assertEqual(3, self.s3_bucket.new_key.call_count)
+        self.assertEqual(3, self.s3_key.set_contents_from_string.call_count)
 
     def test_process_email_good_attachment(self):
         self.format_1.matrix_attachment_name = 'filename.xls'
@@ -280,6 +281,36 @@ class TestQuoteEmailProcessor(TestCase):
         self.s3_connection.get_bucket.assert_called_once_with(
             self.s3_bucket_name)
         self.s3_bucket.new_key.assert_called_once_with(name)
+        self.assertEqual(1, self.s3_key.set_contents_from_string.call_count)
+
+    def test_process_email_body(self):
+
+        self.message.add_header('Content-Type', 'text/html')
+        contents = 'Body of <b>message</b>'
+        self.message.set_payload(contents)
+        email_file = StringIO(self.message.as_string())
+
+        self.qep.process_email(email_file)
+
+        # normal situation: quotes are extracted from the file and committed
+        # in a nested transaction
+        self.assertEqual(
+            1, self.quote_dao.get_supplier_objects_for_message.call_count)
+        self.assertEqual(1, self.quote_dao.begin.call_count)
+        self.assertEqual(len(self.quotes),
+                         self.quote_dao.insert_quotes.call_count)
+        self.assertEqual(1, self.quote_parser.load_file.call_count)
+        self.assertEqual(self.quote_parser.load_file.call_args_list[0][0][0]
+                         .getvalue(), contents)
+        self.quote_parser.extract_quotes.assert_called_once_with()
+        self.assertEqual(0, self.quote_dao.rollback.call_count)
+        self.assertEqual(1, self.quote_dao.commit.call_count)
+
+        # file should have been uploaded to S3
+        # (not checking actual file contents)
+        self.s3_connection.get_bucket.assert_called_once_with(
+            self.s3_bucket_name)
+        self.s3_bucket.new_key.assert_called_once_with(self.message['Subject'])
         self.assertEqual(1, self.s3_key.set_contents_from_string.call_count)
 
     def test_process_email_no_quotes(self):
@@ -317,21 +348,24 @@ class TestQuoteEmailProcessor(TestCase):
         # can't figure out how to create a well-formed email with 2 attachments
         # using the Python "email" module, so here's one from a file
         with open('test/quote_files/quote_email.txt') as f:
-            self.qep.process_email(f)
+            # this error is raised because of the text/html
+            # is returned as an attachement
+            with self.assertRaises(MultipleErrors):
+                self.qep.process_email(f)
 
         # the 2 files are processed by 2 separate QuoteParsers
         self.assertEqual(
             1, self.quote_dao.get_supplier_objects_for_message.call_count)
         self.assertEqual(
-            2, self.quote_dao.get_matrix_format_for_file.call_count)
-        self.assertEqual(2, self.quote_dao.begin.call_count)
+            3, self.quote_dao.get_matrix_format_for_file.call_count)
+        self.assertEqual(3, self.quote_dao.begin.call_count)
         self.assertEqual(2 * len(self.quotes),
                          self.quote_dao.insert_quotes.call_count)
         self.assertEqual(1, self.quote_parser.load_file.call_count)
         self.quote_parser.extract_quotes.assert_called_once_with()
         self.quote_parser_2.extract_quotes.assert_called_once_with()
         self.assertEqual(1, self.quote_parser_2.load_file.call_count)
-        self.assertEqual(0, self.quote_dao.rollback.call_count)
+        self.assertEqual(1, self.quote_dao.rollback.call_count)
         self.assertEqual(2, self.quote_dao.commit.call_count)
 
         # 2 files should be uploaded to s3

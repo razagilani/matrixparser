@@ -125,6 +125,8 @@ class QuoteDAO(object):
         in email body
         :return: brokerage.model.MatrixFormat
         """
+        #matrix_attachment_name matches either an attachment name an email
+        # subject but not both, depending on match_email_body
         matching_formats = [f for f in supplier.matrix_formats if
             f.matrix_attachment_name is None or
                             re.match(f.matrix_attachment_name, file_name,
@@ -306,7 +308,17 @@ class QuoteEmailProcessor(object):
         # load quotes from the file into the database
         self.logger.info('Matched email with supplier: %s' % supplier.name)
 
+
         attachments = get_attachments(message)
+        for part in message.walk():
+            if part.get_content_maintype() == 'multipart':
+                continue
+            if part.get_content_type() == 'text/html' and 'attachment' not in str(part.get('Content-Disposition')):
+                file_content = part.get_payload(decode=True)  # decode
+                file_name = message['subject']
+                match_email_body = True
+                attachments.append((file_name, file_content, match_email_body))
+                break
         # TODO: should 0 attachments be considered an error?
         if len(attachments) == 0:
             self.logger.warn(
@@ -319,13 +331,13 @@ class QuoteEmailProcessor(object):
         error_messages = []
 
         files_count, quotes_count = 0, 0
-        for file_name, file_content, email_body in attachments:
+        for file_name, file_content, match_email_body in attachments:
             self.logger.info('Processing attachment from %s: "%s"' % (
                 supplier.name, file_name))
             self._quote_dao.begin()
             try:
                 quote_parser = self._process_quote_file(
-                    supplier, altitude_supplier, file_name, file_content, email_body)
+                    supplier, altitude_supplier, file_name, file_content, match_email_body)
             except UnknownFormatError:
                 self._quote_dao.rollback()
                 self.logger.warn(('Skipped attachment from %s with unexpected '
