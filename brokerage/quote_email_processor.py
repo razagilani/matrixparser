@@ -128,9 +128,9 @@ class QuoteDAO(object):
         #matrix_attachment_name matches either an attachment name an email
         # subject but not both, depending on match_email_body
         matching_formats = [f for f in supplier.matrix_formats if
-            f.matrix_attachment_name is None or
+            (f.matrix_attachment_name is None or
                             re.match(f.matrix_attachment_name, file_name,
-                                     re.IGNORECASE | re.DOTALL) and
+                                     re.IGNORECASE | re.DOTALL)) and
                             f.match_email_body == match_email_body]
         if len(matching_formats) == 0:
             raise UnknownFormatError('No formats matched file name "%s"' %
@@ -271,12 +271,12 @@ class QuoteEmailProcessor(object):
 
     def process_email(self, email_file):
         """Read an email from the given file, which should be an email from a
-        supplier containing one or more matrix quote files as attachments.
+        supplier containing one or more matrix quote files as files.
         Determine which supplier the email is from, and process each
         attachment using a QuoteParser to extract quotes from the file and
         store them in the Altitude database.
 
-        If there are no attachments, nothing happens.
+        If there are no files, nothing happens.
 
         Quotes should be inserted with a savepoint after each file is
         completed, so an error in a later file won't affect earlier ones. But
@@ -309,7 +309,7 @@ class QuoteEmailProcessor(object):
         self.logger.info('Matched email with supplier: %s' % supplier.name)
 
 
-        attachments = get_attachments(message)
+        files = get_attachments(message)
         for part in message.walk():
             if part.get_content_maintype() == 'multipart':
                 continue
@@ -317,12 +317,12 @@ class QuoteEmailProcessor(object):
                 file_content = part.get_payload(decode=True)  # decode
                 file_name = message['subject']
                 match_email_body = True
-                attachments.append((file_name, file_content, match_email_body))
+                files.append((file_name, file_content, match_email_body))
                 break
-        # TODO: should 0 attachments be considered an error?
-        if len(attachments) == 0:
+        # TODO: should 0 files be considered an error?
+        if len(files) == 0:
             self.logger.warn(
-                'Email from %s has no attachments' % supplier.name)
+                'Email from %s has no files' % supplier.name)
 
         # since an exception when processing one file causes that file to be
         # skipped, but other files are still processed, error messages must
@@ -331,7 +331,7 @@ class QuoteEmailProcessor(object):
         error_messages = []
 
         files_count, quotes_count = 0, 0
-        for file_name, file_content, match_email_body in attachments:
+        for file_name, file_content, match_email_body in files:
             self.logger.info('Processing attachment from %s: "%s"' % (
                 supplier.name, file_name))
             self._quote_dao.begin()
@@ -363,7 +363,7 @@ class QuoteEmailProcessor(object):
             files_count += 1
 
         if len(error_messages) > 0:
-            raise MultipleErrors(len(attachments), error_messages)
+            raise MultipleErrors(len(files), error_messages)
 
         # if all files were skipped, or at least one file was read but 0
         # quotes were in them, it's considered an error

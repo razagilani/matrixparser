@@ -34,9 +34,8 @@ class TestQuoteEmailProcessor(TestCase):
         self.supplier = Supplier(id=1, name='The Supplier')
         self.format_1 = MatrixFormat(matrix_format_id=1)
         self.quote_dao = Mock(autospec=QuoteDAO)
-        self.altitude_supplier = Company(company_id=2, name='The Supplier')
         self.quote_dao.get_supplier_objects_for_message.return_value = (
-            self.supplier, self.altitude_supplier)
+            self.supplier, Company(company_id=2, name='The Supplier'))
         self.quote_dao.get_matrix_format_for_file.return_value = self.format_1
 
         self.quotes = [Mock(autospec=Quote), Mock(autospec=Quote)]
