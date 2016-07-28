@@ -109,7 +109,7 @@ class QuoteDAO(object):
         altitude_supplier = q.first()
         return supplier, altitude_supplier
 
-    def get_matrix_format_for_file(self, supplier, file_name):
+    def get_matrix_format_for_file(self, supplier, file_name, match_email_body):
         """
         Return the MatrixFormat object that determines which parser class will
         be used to parse a file from the given supplier with the given name.
@@ -121,12 +121,15 @@ class QuoteDAO(object):
 
         :param supplier: core.model.Supplier
         :param file_name: name of the matrix file
+        :param match_email_body: boolean value that indicates if quotes are
+        in email body
         :return: brokerage.model.MatrixFormat
         """
         matching_formats = [f for f in supplier.matrix_formats if
-                            f.matrix_attachment_name is None or
+            f.matrix_attachment_name is None or
                             re.match(f.matrix_attachment_name, file_name,
-                                     re.IGNORECASE | re.DOTALL)]
+                                     re.IGNORECASE | re.DOTALL) and
+                            f.match_email_body == match_email_body]
         if len(matching_formats) == 0:
             raise UnknownFormatError('No formats matched file name "%s"' %
                                      file_name)
@@ -197,7 +200,7 @@ class QuoteEmailProcessor(object):
         self._s3_bucket_name = s3_bucket_name
 
     def _process_quote_file(self, supplier, altitude_supplier, file_name,
-                            file_content):
+                            file_content, match_email_body):
         """Process quotes from a single quote file for the given supplier.
 
         :param supplier: core.model.Supplier instance
@@ -214,13 +217,16 @@ class QuoteEmailProcessor(object):
         object would be better, but the Python 'email' module processes a
         whole file at a time so it all has to be in memory anyway.)
 
+        :param match_email_body: boolean argument that tells if the quotes
+        are in email body
+
         :return the QuoteParser instance used to process the given file (
         which can be used to get the number of quotes).
         """
         # find the MatrixFormat corresponding to this file
         # (may raise UnknownFormatError)
         matrix_format = self._quote_dao.get_matrix_format_for_file(
-            supplier, file_name)
+            supplier, file_name, match_email_body)
 
         # upload files after identifying the format, but before parsing,
         # so even invalid files get uploaded
@@ -313,13 +319,13 @@ class QuoteEmailProcessor(object):
         error_messages = []
 
         files_count, quotes_count = 0, 0
-        for file_name, file_content in attachments:
+        for file_name, file_content, email_body in attachments:
             self.logger.info('Processing attachment from %s: "%s"' % (
                 supplier.name, file_name))
             self._quote_dao.begin()
             try:
                 quote_parser = self._process_quote_file(
-                    supplier, altitude_supplier, file_name, file_content)
+                    supplier, altitude_supplier, file_name, file_content, email_body)
             except UnknownFormatError:
                 self._quote_dao.rollback()
                 self.logger.warn(('Skipped attachment from %s with unexpected '

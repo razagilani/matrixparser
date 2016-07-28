@@ -224,6 +224,10 @@ class MatrixFormat(Base):
     supplier_id = Column(Integer, ForeignKey('supplier.id'), nullable=False)
     name = Column(String)
 
+    # this field should be set to true if the quotes are included in the
+    # email body
+    match_email_body = Column(Boolean, default=False)
+
     supplier = relationship(Supplier, backref='matrix_formats')
 
     # regular expression matching names of files that are expected to have

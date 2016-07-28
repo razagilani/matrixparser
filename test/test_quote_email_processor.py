@@ -350,8 +350,8 @@ class TestQuoteDAO(TestCase):
 
     def setUp(self):
         self.dao = QuoteDAO()
-        self.format1 = MatrixFormat()
-        self.format2 = MatrixFormat()
+        self.format1 = MatrixFormat(match_email_body=False)
+        self.format2 = MatrixFormat(match_email_body=False)
         self.supplier = Supplier(name='Supplier',
                                  matrix_formats=[self.format1, self.format2])
         Session().add(self.supplier)
@@ -362,26 +362,26 @@ class TestQuoteDAO(TestCase):
     def test_get_matrix_format_for_file(self):
         # multiple matches with blank file name pattern
         with self.assertRaises(UnknownFormatError):
-            self.dao.get_matrix_format_for_file(self.supplier, 'a')
+            self.dao.get_matrix_format_for_file(self.supplier, 'a', False)
 
         # multiple matches: note that both "a" and None match "a"
         self.format1.matrix_attachment_name = 'a'
         with self.assertRaises(UnknownFormatError):
-            self.dao.get_matrix_format_for_file(self.supplier, 'a')
+            self.dao.get_matrix_format_for_file(self.supplier, 'a', False)
 
         # exactly one match
         self.format2.matrix_attachment_name = 'b'
         self.assertEqual(self.format1, self.dao.get_matrix_format_for_file(
-            self.supplier, 'a'))
+            self.supplier, 'a', False))
 
         # no matches
         with self.assertRaises(UnknownFormatError):
-            self.dao.get_matrix_format_for_file(self.supplier, 'c')
+            self.dao.get_matrix_format_for_file(self.supplier, 'c', False)
 
         # multiple matches with non-blank file name patterns
         self.format2.matrix_attachment_name = 'a'
         with self.assertRaises(UnknownFormatError):
-            self.dao.get_matrix_format_for_file(self.supplier, 'a')
+            self.dao.get_matrix_format_for_file(self.supplier, 'a', False)
 
 
 class TestQuoteEmailProcessorWithDB(TestCase):
