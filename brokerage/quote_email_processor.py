@@ -57,7 +57,9 @@ class MultipleErrors(QuoteProcessingError):
     """
     def __init__(self, file_count, exceptions):
         """
-        :param messages: list of (Exception, stack trace string) tuples
+        :param file_count: number of total files processed, whether they
+        succeeded or failed (remember email body counts as a file)
+        :param exceptions: list of Exception objects to report as a batch
         """
         super(QuoteProcessingError, self).__init__()
         self.file_count = file_count

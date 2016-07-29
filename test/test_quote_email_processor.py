@@ -7,7 +7,7 @@ import statsd
 from boto.s3.bucket import Bucket
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
-from mock import Mock
+from mock import Mock, DEFAULT
 
 from brokerage import init_altitude_db, init_model, ROOT_PATH
 from brokerage.exceptions import ValidationError
@@ -38,14 +38,15 @@ class TestQuoteEmailProcessor(TestCase):
         self.quote_dao.get_supplier_objects_for_message.return_value = (
             self.supplier, Company(company_id=2, name='The Supplier'))
 
-        def get_matrix_format(supplier, file_name, match_email_body):
-            # matrix_attachment_name matches either an attachment name or an email
-            # subject but not both, depending on match_email_body
-            if match_email_body:
-                raise UnknownFormatError('No formats matched file name "%s"' %
-                                 file_name)
-            return self.format_1
-        self.quote_dao.get_matrix_format_for_file.side_effect = get_matrix_format
+        # def get_matrix_format(supplier, file_name, match_email_body):
+        #     # matrix_attachment_name matches either an attachment name or an email
+        #     # subject but not both, depending on match_email_body
+        #     if match_email_body:
+        #         raise UnknownFormatError('No formats matched file name "%s"' %
+        #                         file_name)
+        #     return self.format_1
+        #
+        self.quote_dao.get_matrix_format_for_file.return_value = self.format_1
 
         self.quotes = [Mock(autospec=Quote), Mock(autospec=Quote)]
         self.quote_parser = Mock(autospec = QuoteParser)
@@ -230,6 +231,8 @@ class TestQuoteEmailProcessor(TestCase):
         """Two files, one with a ValidationError and the other valid. The bad
         file should not stop the good one from being processed.
         """
+        self.quote_dao.get_matrix_format_for_file.side_effect = [
+             UnknownFormatError, self.format_1, self.format_1]
         # 1st call to extract_quotes fails, 2nd succeeds
         self.quote_parser.extract_quotes.side_effect = [ValidationError, (q for q in self.quotes)]
 
@@ -239,7 +242,7 @@ class TestQuoteEmailProcessor(TestCase):
             with self.assertRaises(MultipleErrors) as e:
                 self.qep.process_email(f)
 
-            # out of 3 files, 2 failed with a ValidationError
+            # out of email body + 2 attachments, 1 failed with a ValidationError
             self.assertEqual(3, e.exception.file_count)
             self.assertEqual(1, len(e.exception.exceptions))
             self.assertIsInstance(e.exception.exceptions[0], ValidationError)
@@ -358,7 +361,7 @@ class TestQuoteEmailProcessor(TestCase):
         different QuoteParser class depending on the file name.
         """
         self.quote_dao.get_matrix_format_for_file.side_effect = [
-            self.format_1, self.format_2]
+           self.format_1, self.format_2,  UnknownFormatError]
 
         # can't figure out how to create a well-formed email with 2 attachments
         # using the Python "email" module, so here's one from a file
