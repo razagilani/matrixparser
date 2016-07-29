@@ -11,7 +11,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from brokerage.exceptions import MatrixError, ValidationError
 from brokerage.model import AltitudeSession, Session, Supplier, Company
-from util.email_util import get_attachments
+from util.email_util import get_attachments, get_body
 
 LOG_NAME = 'read_quotes'
 
@@ -55,17 +55,18 @@ class MultipleErrors(QuoteProcessingError):
     """Used to report a series of one or more error messages from processing
     multiple files.
     """
-    def __init__(self, file_count, messages):
+    def __init__(self, file_count, exceptions):
         """
         :param messages: list of (Exception, stack trace string) tuples
         """
         super(QuoteProcessingError, self).__init__()
         self.file_count = file_count
-        self.messages = messages
+        self.exceptions = exceptions
 
     def __str__(self):
         return '%s files processed, %s errors:\n\n%s' % (
-            self.file_count, len(self.messages), '\n'.join(self.messages))
+            self.file_count, len(self.exceptions),
+            '\n'.join(e.message for e in self.exceptions))
 
 
 class QuoteDAO(object):
@@ -308,27 +309,17 @@ class QuoteEmailProcessor(object):
         # load quotes from the file into the database
         self.logger.info('Matched email with supplier: %s' % supplier.name)
 
-
-        files = get_attachments(message)
-        for part in message.walk():
-            if part.get_content_maintype() == 'multipart':
-                continue
-            if part.get_content_type() == 'text/html' and 'attachment' not in str(part.get('Content-Disposition')):
-                file_content = part.get_payload(decode=True)  # decode
-                file_name = message['subject']
-                match_email_body = True
-                files.append((file_name, file_content, match_email_body))
-                break
-        # TODO: should 0 files be considered an error?
-        if len(files) == 0:
-            self.logger.warn(
-                'Email from %s has no files' % supplier.name)
+        body = get_body(message)
+        if body:
+            files = [(subject, body, True)] + get_attachments(message)
+        else:
+            files = get_attachments(message)
 
         # since an exception when processing one file causes that file to be
         # skipped, but other files are still processed, error messages must
         # be stored so they can be reported after all files have been processed.
         # to avoid complexity this is done even if there was only one error.
-        error_messages = []
+        errors = []
 
         files_count, quotes_count = 0, 0
         for file_name, file_content, match_email_body in files:
@@ -337,20 +328,24 @@ class QuoteEmailProcessor(object):
             self._quote_dao.begin()
             try:
                 quote_parser = self._process_quote_file(
-                    supplier, altitude_supplier, file_name, file_content, match_email_body)
+                    supplier, altitude_supplier, file_name, file_content,
+                    match_email_body)
             except UnknownFormatError:
                 self._quote_dao.rollback()
                 self.logger.warn(('Skipped attachment from %s with unexpected '
                                  'name: "%s"') % (supplier.name, file_name))
                 continue
-            except:
+            except Exception as e:
                 self._quote_dao.rollback()
-                message = 'Error when processing attachment "%s" from ' \
-                          '%s:\n%s' % (
-                              file_name, supplier.name, traceback.format_exc())
-                # TODO: is logging this here redundant?
                 self.logger.error(message)
-                error_messages.append(message)
+                # modify the error message so it includes the supplier name
+                # and file name, for use in bounce emails
+                # TODO: this can go away when we stop bouncing
+                # emails MultipleErrors is removed
+                e.message = 'Error when processing attachment "%s" from ' \
+                            '%s:\n%s' % (
+                            file_name, supplier.name, traceback.format_exc())
+                errors.append(e)
                 continue
             self._quote_dao.commit()
             quotes_count = quote_parser.get_count()
@@ -362,8 +357,8 @@ class QuoteEmailProcessor(object):
             quotes_counter += quotes_count
             files_count += 1
 
-        if len(error_messages) > 0:
-            raise MultipleErrors(len(files), error_messages)
+        if len(errors) > 0:
+            raise MultipleErrors(len(files), errors)
 
         # if all files were skipped, or at least one file was read but 0
         # quotes were in them, it's considered an error

@@ -38,14 +38,14 @@ class TestQuoteEmailProcessor(TestCase):
         self.quote_dao.get_supplier_objects_for_message.return_value = (
             self.supplier, Company(company_id=2, name='The Supplier'))
 
-        def get_matrix_format_side_effect(supplier, file_name, match_email_body):
+        def get_matrix_format(supplier, file_name, match_email_body):
             # matrix_attachment_name matches either an attachment name or an email
             # subject but not both, depending on match_email_body
             if match_email_body:
                 raise UnknownFormatError('No formats matched file name "%s"' %
                                  file_name)
             return self.format_1
-        self.quote_dao.get_matrix_format_for_file.side_effect = get_matrix_format_side_effect
+        self.quote_dao.get_matrix_format_for_file.side_effect = get_matrix_format
 
         self.quotes = [Mock(autospec=Quote), Mock(autospec=Quote)]
         self.quote_parser = Mock(autospec = QuoteParser)
@@ -241,8 +241,8 @@ class TestQuoteEmailProcessor(TestCase):
 
             # out of 3 files, 2 failed with a ValidationError
             self.assertEqual(3, e.exception.file_count)
-            self.assertEqual(1, len(e.exception.messages))
-            self.assertIn('ValidationError', e.exception.messages[0])
+            self.assertEqual(1, len(e.exception.exceptions))
+            self.assertIsInstance(e.exception.exceptions[0], ValidationError)
 
         # 1st file fails so its transaction gets rolled back; 2nd file
         # succeeds so it gets committed.
@@ -362,11 +362,10 @@ class TestQuoteEmailProcessor(TestCase):
 
         # can't figure out how to create a well-formed email with 2 attachments
         # using the Python "email" module, so here's one from a file
+        # the email body doesn't have a corresponding MatrixFormat so
+        # UnknownFormatError is raised, which is not a problem.
         with open('test/quote_files/quote_email.txt') as f:
-            # this error is raised because of the text/html
-            # is returned as an attachement
-            with self.assertRaises(MultipleErrors):
-                self.qep.process_email(f)
+            self.qep.process_email(f)
 
         # the 2 files are processed by 2 separate QuoteParsers
         self.assertEqual(
