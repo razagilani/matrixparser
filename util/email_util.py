@@ -92,10 +92,13 @@ def get_attachments(message):
     """Get attachments from a MIME email body.
     :param message: some object from the 'email' module, can't tell what type
     it is
-    :return: list of (name, contents) tuples containing the name and contents
-    of each attachment as strings.
+    :return: list of (name, contents) tuples containing the name, contents
+    and a boolean False for each attachment.
     """
     result = []
+    # A boolean that indicates that the file_contents are from an attachment
+    # in email and not from the email body
+    match_email_body = False
     for part in message.walk():
         if part.get_content_maintype() == 'multipart':
             continue
@@ -110,6 +113,6 @@ def get_attachments(message):
             continue
         # this part is an attachment
         file_content = part.get_payload(decode=True)
-        result.append((file_name, file_content))
+        result.append((file_name, file_content, match_email_body))
     return result
 
