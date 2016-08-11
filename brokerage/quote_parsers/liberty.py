@@ -270,7 +270,7 @@ class LibertyMatrixParser(QuoteParser):
                 # Make sure every sheet maintains the limit KWH of 2,000,000
                 if not any(['%s kWh' % '{:,}'.format(self.LIBERTY_KWH_LIMIT)
                             in (self.reader.get(sheet, 3, col, object) or '')
-                            for col in xrange(0, 14)]):
+                            for col in xrange(0, self.reader.get_width(sheet))]):
                     raise ValidationError('Size requirements has changed.')
 
     def _scan_for_tables(self, sheet):

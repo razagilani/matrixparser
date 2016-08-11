@@ -2,6 +2,7 @@ import datetime
 import time
 from decimal import Decimal
 from tablib import formats
+from brokerage.file_utils import LibreOfficeFileConverter
 
 from brokerage.quote_parser import QuoteParser, \
     excel_number_to_datetime, SimpleCellDateGetter
@@ -21,7 +22,7 @@ class AEPMatrixParser(QuoteParser):
 
     EXPECTED_SHEET_TITLES = [
         'Price Finder', 'Customer Information', 'Matrix Table-FPAI',
-        'Matrix Table-Energy Only', 'PLC Load Factor Calculator']
+        'PLC Load Factor Calculator']
 
     # FPAI is "Fixed-Price All-In"; we're ignoring the "Energy Only" quotes
     SHEET = 'Matrix Table-FPAI'
@@ -70,6 +71,10 @@ class AEPMatrixParser(QuoteParser):
     # TODO: prices are valid until 6 PM CST = 7 PM EST according to cell
     # below the date cell
     date_getter = SimpleCellDateGetter(SHEET, 3, 'W', None)
+
+    def _preprocess_file(self, quote_file, file_name):
+        return LibreOfficeFileConverter(
+            'xls', 'xls:"MS Excel 97"').convert_file(quote_file, file_name)
 
     def _extract_quotes(self):
         for row in xrange(self.QUOTE_START_ROW,
