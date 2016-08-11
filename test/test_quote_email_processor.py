@@ -7,7 +7,7 @@ import statsd
 from boto.s3.bucket import Bucket
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
-from mock import Mock
+from mock import Mock, DEFAULT
 
 from brokerage import init_altitude_db, init_model, ROOT_PATH
 from brokerage.exceptions import ValidationError
@@ -31,11 +31,21 @@ class TestQuoteEmailProcessor(TestCase):
     """Unit tests for QuoteEmailProcessor.
     """
     def setUp(self):
+
         self.supplier = Supplier(id=1, name='The Supplier')
         self.format_1 = MatrixFormat(matrix_format_id=1)
         self.quote_dao = Mock(autospec=QuoteDAO)
         self.quote_dao.get_supplier_objects_for_message.return_value = (
             self.supplier, Company(company_id=2, name='The Supplier'))
+
+        # def get_matrix_format(supplier, file_name, match_email_body):
+        #     # matrix_attachment_name matches either an attachment name or an email
+        #     # subject but not both, depending on match_email_body
+        #     if match_email_body:
+        #         raise UnknownFormatError('No formats matched file name "%s"' %
+        #                         file_name)
+        #     return self.format_1
+        #
         self.quote_dao.get_matrix_format_for_file.return_value = self.format_1
 
         self.quotes = [Mock(autospec=Quote), Mock(autospec=Quote)]
@@ -81,6 +91,7 @@ class TestQuoteEmailProcessor(TestCase):
         self.message['To'] = 'Original Recipient'
         self.message['Delivered-To'] = self.recipient
         self.message['Subject'] = self.subject
+
 
     def test_process_email_malformed(self):
         with self.assertRaises(EmailError):
@@ -220,6 +231,8 @@ class TestQuoteEmailProcessor(TestCase):
         """Two files, one with a ValidationError and the other valid. The bad
         file should not stop the good one from being processed.
         """
+        self.quote_dao.get_matrix_format_for_file.side_effect = [
+             UnknownFormatError, self.format_1, self.format_1]
         # 1st call to extract_quotes fails, 2nd succeeds
         self.quote_parser.extract_quotes.side_effect = [ValidationError, (q for q in self.quotes)]
 
@@ -229,23 +242,23 @@ class TestQuoteEmailProcessor(TestCase):
             with self.assertRaises(MultipleErrors) as e:
                 self.qep.process_email(f)
 
-            # out of 2 files, one failed with a ValidationError
-            self.assertEqual(2, e.exception.file_count)
-            self.assertEqual(1, len(e.exception.messages))
-            self.assertIn('ValidationError', e.exception.messages[0])
+            # out of email body + 2 attachments, 1 failed with a ValidationError
+            self.assertEqual(3, e.exception.file_count)
+            self.assertEqual(1, len(e.exception.exceptions))
+            self.assertIsInstance(e.exception.exceptions[0], ValidationError)
 
         # 1st file fails so its transaction gets rolled back; 2nd file
         # succeeds so it gets committed.
         self.assertEqual(
             1, self.quote_dao.get_supplier_objects_for_message.call_count)
         self.assertEqual(
-            2, self.quote_dao.get_matrix_format_for_file.call_count)
-        self.assertEqual(2, self.quote_dao.begin.call_count)
+            3, self.quote_dao.get_matrix_format_for_file.call_count)
+        self.assertEqual(3, self.quote_dao.begin.call_count)
         self.assertEqual(1 * len(self.quotes),
                          self.quote_dao.insert_quotes.call_count)
         self.assertEqual(2, self.quote_parser.load_file.call_count)
         self.assertEqual(2, self.quote_parser.extract_quotes.call_count)
-        self.assertEqual(1, self.quote_dao.rollback.call_count)
+        self.assertEqual(2, self.quote_dao.rollback.call_count)
         self.assertEqual(1, self.quote_dao.commit.call_count)
 
         # 2 files should be uploaded to s3
@@ -282,6 +295,42 @@ class TestQuoteEmailProcessor(TestCase):
         self.s3_bucket.new_key.assert_called_once_with(name)
         self.assertEqual(1, self.s3_key.set_contents_from_string.call_count)
 
+    def test_process_email_body(self):
+        self.quote_dao.get_matrix_format_for_file = Mock()
+        self.quote_dao.get_matrix_format_for_file.return_value = self.format_1
+
+        self.message.add_header('Content-Type', 'text/html')
+        contents = 'Body of <b>message</b>'
+        self.message.set_payload(contents)
+        email_file = StringIO(self.message.as_string())
+
+        self.qep.process_email(email_file)
+
+        # normal situation: quotes are extracted from the file and committed
+        # in a nested transaction
+        self.assertEqual(
+            1, self.quote_dao.get_supplier_objects_for_message.call_count)
+        self.assertEqual(1, self.quote_dao.begin.call_count)
+        self.assertEqual(len(self.quotes),
+                         self.quote_dao.insert_quotes.call_count)
+        self.assertEqual(1, self.quote_parser.load_file.call_count)
+        self.assertEqual(self.quote_parser.load_file.call_args_list[0][0][0]
+                         .getvalue(), contents)
+        self.assertEqual(self.quote_parser.load_file.call_args_list[0][0][1]
+                         , self.message['Subject'])
+        self.assertEqual(self.quote_parser.load_file.call_args_list[0][0][2]
+                         , self.format_1)
+        self.quote_parser.extract_quotes.assert_called_once_with()
+        self.assertEqual(0, self.quote_dao.rollback.call_count)
+        self.assertEqual(1, self.quote_dao.commit.call_count)
+
+        # file should have been uploaded to S3
+        # (not checking actual file contents)
+        self.s3_connection.get_bucket.assert_called_once_with(
+            self.s3_bucket_name)
+        self.s3_bucket.new_key.assert_called_once_with(self.message['Subject'])
+        self.assertEqual(1, self.s3_key.set_contents_from_string.call_count)
+
     def test_process_email_no_quotes(self):
         self.message.add_header('Content-Disposition', 'attachment',
                                 filename='filename.xls')
@@ -312,10 +361,12 @@ class TestQuoteEmailProcessor(TestCase):
         different QuoteParser class depending on the file name.
         """
         self.quote_dao.get_matrix_format_for_file.side_effect = [
-            self.format_1, self.format_2]
+           self.format_1, self.format_2,  UnknownFormatError]
 
         # can't figure out how to create a well-formed email with 2 attachments
         # using the Python "email" module, so here's one from a file
+        # the email body doesn't have a corresponding MatrixFormat so
+        # UnknownFormatError is raised, which is not a problem.
         with open('test/quote_files/quote_email.txt') as f:
             self.qep.process_email(f)
 
@@ -323,15 +374,15 @@ class TestQuoteEmailProcessor(TestCase):
         self.assertEqual(
             1, self.quote_dao.get_supplier_objects_for_message.call_count)
         self.assertEqual(
-            2, self.quote_dao.get_matrix_format_for_file.call_count)
-        self.assertEqual(2, self.quote_dao.begin.call_count)
+            3, self.quote_dao.get_matrix_format_for_file.call_count)
+        self.assertEqual(3, self.quote_dao.begin.call_count)
         self.assertEqual(2 * len(self.quotes),
                          self.quote_dao.insert_quotes.call_count)
         self.assertEqual(1, self.quote_parser.load_file.call_count)
         self.quote_parser.extract_quotes.assert_called_once_with()
         self.quote_parser_2.extract_quotes.assert_called_once_with()
         self.assertEqual(1, self.quote_parser_2.load_file.call_count)
-        self.assertEqual(0, self.quote_dao.rollback.call_count)
+        self.assertEqual(1, self.quote_dao.rollback.call_count)
         self.assertEqual(2, self.quote_dao.commit.call_count)
 
         # 2 files should be uploaded to s3
@@ -350,8 +401,8 @@ class TestQuoteDAO(TestCase):
 
     def setUp(self):
         self.dao = QuoteDAO()
-        self.format1 = MatrixFormat()
-        self.format2 = MatrixFormat()
+        self.format1 = MatrixFormat(match_email_body=False)
+        self.format2 = MatrixFormat(match_email_body=False)
         self.supplier = Supplier(name='Supplier',
                                  matrix_formats=[self.format1, self.format2])
         Session().add(self.supplier)
@@ -362,26 +413,26 @@ class TestQuoteDAO(TestCase):
     def test_get_matrix_format_for_file(self):
         # multiple matches with blank file name pattern
         with self.assertRaises(UnknownFormatError):
-            self.dao.get_matrix_format_for_file(self.supplier, 'a')
+            self.dao.get_matrix_format_for_file(self.supplier, 'a', False)
 
         # multiple matches: note that both "a" and None match "a"
         self.format1.matrix_attachment_name = 'a'
         with self.assertRaises(UnknownFormatError):
-            self.dao.get_matrix_format_for_file(self.supplier, 'a')
+            self.dao.get_matrix_format_for_file(self.supplier, 'a', False)
 
         # exactly one match
         self.format2.matrix_attachment_name = 'b'
         self.assertEqual(self.format1, self.dao.get_matrix_format_for_file(
-            self.supplier, 'a'))
+            self.supplier, 'a', False))
 
         # no matches
         with self.assertRaises(UnknownFormatError):
-            self.dao.get_matrix_format_for_file(self.supplier, 'c')
+            self.dao.get_matrix_format_for_file(self.supplier, 'c', False)
 
         # multiple matches with non-blank file name patterns
         self.format2.matrix_attachment_name = 'a'
         with self.assertRaises(UnknownFormatError):
-            self.dao.get_matrix_format_for_file(self.supplier, 'a')
+            self.dao.get_matrix_format_for_file(self.supplier, 'a', False)
 
 
 class TestQuoteEmailProcessorWithDB(TestCase):

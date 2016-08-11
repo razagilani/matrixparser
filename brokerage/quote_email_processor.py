@@ -11,7 +11,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from brokerage.exceptions import MatrixError, ValidationError
 from brokerage.model import AltitudeSession, Session, Supplier, Company
-from util.email_util import get_attachments
+from util.email_util import get_attachments, get_body
 
 LOG_NAME = 'read_quotes'
 
@@ -55,17 +55,20 @@ class MultipleErrors(QuoteProcessingError):
     """Used to report a series of one or more error messages from processing
     multiple files.
     """
-    def __init__(self, file_count, messages):
+    def __init__(self, file_count, exceptions):
         """
-        :param messages: list of (Exception, stack trace string) tuples
+        :param file_count: number of total files processed, whether they
+        succeeded or failed (remember email body counts as a file)
+        :param exceptions: list of Exception objects to report as a batch
         """
         super(QuoteProcessingError, self).__init__()
         self.file_count = file_count
-        self.messages = messages
+        self.exceptions = exceptions
 
     def __str__(self):
         return '%s files processed, %s errors:\n\n%s' % (
-            self.file_count, len(self.messages), '\n'.join(self.messages))
+            self.file_count, len(self.exceptions),
+            '\n'.join(e.message for e in self.exceptions))
 
 
 class QuoteDAO(object):
@@ -109,7 +112,7 @@ class QuoteDAO(object):
         altitude_supplier = q.first()
         return supplier, altitude_supplier
 
-    def get_matrix_format_for_file(self, supplier, file_name):
+    def get_matrix_format_for_file(self, supplier, file_name, match_email_body):
         """
         Return the MatrixFormat object that determines which parser class will
         be used to parse a file from the given supplier with the given name.
@@ -121,12 +124,17 @@ class QuoteDAO(object):
 
         :param supplier: core.model.Supplier
         :param file_name: name of the matrix file
+        :param match_email_body: boolean value that indicates if quotes are
+        in email body
         :return: brokerage.model.MatrixFormat
         """
+        #matrix_attachment_name matches either an attachment name an email
+        # subject but not both, depending on match_email_body
         matching_formats = [f for f in supplier.matrix_formats if
-                            f.matrix_attachment_name is None or
+            (f.matrix_attachment_name is None or
                             re.match(f.matrix_attachment_name, file_name,
-                                     re.IGNORECASE | re.DOTALL)]
+                                     re.IGNORECASE | re.DOTALL)) and
+                            f.match_email_body == match_email_body]
         if len(matching_formats) == 0:
             raise UnknownFormatError('No formats matched file name "%s"' %
                                      file_name)
@@ -197,7 +205,7 @@ class QuoteEmailProcessor(object):
         self._s3_bucket_name = s3_bucket_name
 
     def _process_quote_file(self, supplier, altitude_supplier, file_name,
-                            file_content):
+                            file_content, match_email_body):
         """Process quotes from a single quote file for the given supplier.
 
         :param supplier: core.model.Supplier instance
@@ -214,13 +222,16 @@ class QuoteEmailProcessor(object):
         object would be better, but the Python 'email' module processes a
         whole file at a time so it all has to be in memory anyway.)
 
+        :param match_email_body: boolean argument that tells if the quotes
+        are in email body
+
         :return the QuoteParser instance used to process the given file (
         which can be used to get the number of quotes).
         """
         # find the MatrixFormat corresponding to this file
         # (may raise UnknownFormatError)
         matrix_format = self._quote_dao.get_matrix_format_for_file(
-            supplier, file_name)
+            supplier, file_name, match_email_body)
 
         # upload files after identifying the format, but before parsing,
         # so even invalid files get uploaded
@@ -263,12 +274,12 @@ class QuoteEmailProcessor(object):
 
     def process_email(self, email_file):
         """Read an email from the given file, which should be an email from a
-        supplier containing one or more matrix quote files as attachments.
+        supplier containing one or more matrix quote files as files.
         Determine which supplier the email is from, and process each
         attachment using a QuoteParser to extract quotes from the file and
         store them in the Altitude database.
 
-        If there are no attachments, nothing happens.
+        If there are no files, nothing happens.
 
         Quotes should be inserted with a savepoint after each file is
         completed, so an error in a later file won't affect earlier ones. But
@@ -300,39 +311,43 @@ class QuoteEmailProcessor(object):
         # load quotes from the file into the database
         self.logger.info('Matched email with supplier: %s' % supplier.name)
 
-        attachments = get_attachments(message)
-        # TODO: should 0 attachments be considered an error?
-        if len(attachments) == 0:
-            self.logger.warn(
-                'Email from %s has no attachments' % supplier.name)
+        body = get_body(message)
+        if body:
+            files = [(subject, body, True)] + get_attachments(message)
+        else:
+            files = get_attachments(message)
 
         # since an exception when processing one file causes that file to be
         # skipped, but other files are still processed, error messages must
         # be stored so they can be reported after all files have been processed.
         # to avoid complexity this is done even if there was only one error.
-        error_messages = []
+        errors = []
 
         files_count, quotes_count = 0, 0
-        for file_name, file_content in attachments:
+        for file_name, file_content, match_email_body in files:
             self.logger.info('Processing attachment from %s: "%s"' % (
                 supplier.name, file_name))
             self._quote_dao.begin()
             try:
                 quote_parser = self._process_quote_file(
-                    supplier, altitude_supplier, file_name, file_content)
+                    supplier, altitude_supplier, file_name, file_content,
+                    match_email_body)
             except UnknownFormatError:
                 self._quote_dao.rollback()
                 self.logger.warn(('Skipped attachment from %s with unexpected '
                                  'name: "%s"') % (supplier.name, file_name))
                 continue
-            except:
+            except Exception as e:
                 self._quote_dao.rollback()
-                message = 'Error when processing attachment "%s" from ' \
-                          '%s:\n%s' % (
-                              file_name, supplier.name, traceback.format_exc())
-                # TODO: is logging this here redundant?
                 self.logger.error(message)
-                error_messages.append(message)
+                # modify the error message so it includes the supplier name
+                # and file name, for use in bounce emails
+                # TODO: this can go away when we stop bouncing
+                # emails MultipleErrors is removed
+                e.message = 'Error when processing attachment "%s" from ' \
+                            '%s:\n%s' % (
+                            file_name, supplier.name, traceback.format_exc())
+                errors.append(e)
                 continue
             self._quote_dao.commit()
             quotes_count = quote_parser.get_count()
@@ -344,8 +359,8 @@ class QuoteEmailProcessor(object):
             quotes_counter += quotes_count
             files_count += 1
 
-        if len(error_messages) > 0:
-            raise MultipleErrors(len(attachments), error_messages)
+        if len(errors) > 0:
+            raise MultipleErrors(len(files), errors)
 
         # if all files were skipped, or at least one file was read but 0
         # quotes were in them, it's considered an error

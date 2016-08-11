@@ -88,14 +88,33 @@ def send_email(from_user, recipients, subject, originator, password, smtp_host,
     server.close()
 
 
+def get_body(message):
+    """Return the body if the given email, interpreted as the first
+    "text/html" section if one exists, or otherwise the first overall section
+    without the "Content-Disposition: attachment" header. If there is no
+    section without "Content-Disposition: attachment", return None.
+    """
+    for part in message.walk():
+        if part.get_content_type() == 'text/html' and 'attachment' not in str(
+                part.get('Content-Disposition')):
+            return part.get_payload(decode=True)
+    for part in message.walk():
+        if 'attachment' not in str(part.get('Content-Disposition')):
+            return part.get_payload(decode=True)
+    return None
+
+
 def get_attachments(message):
     """Get attachments from a MIME email body.
     :param message: some object from the 'email' module, can't tell what type
     it is
-    :return: list of (name, contents) tuples containing the name and contents
-    of each attachment as strings.
+    :return: list of (name, contents) tuples containing the name, contents
+    and a boolean False for each attachment.
     """
     result = []
+    # A boolean that indicates that the file_contents are from an attachment
+    # in email and not from the email body
+    match_email_body = False
     for part in message.walk():
         if part.get_content_maintype() == 'multipart':
             continue
@@ -110,6 +129,6 @@ def get_attachments(message):
             continue
         # this part is an attachment
         file_content = part.get_payload(decode=True)
-        result.append((file_name, file_content))
+        result.append((file_name, file_content, match_email_body))
     return result
 
