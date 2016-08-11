@@ -21,7 +21,7 @@ class EmailUtilsTest(TestCase):
     def test_get_attachments_1(self):
         attachments = get_attachments(self.message_with_attachment)
         self.assertEqual(1, len(attachments))
-        name, content = attachments[0]
+        name, content, match_email = attachments[0]
         self.assertEqual('DailyReportCSV.csv', name)
         self.assertEqual(14768, len(content))
 
