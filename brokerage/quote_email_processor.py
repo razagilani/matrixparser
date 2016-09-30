@@ -329,9 +329,8 @@ class QuoteEmailProcessor(object):
 
         files_count, quotes_count = 0, 0
         for file_name, file_content, match_email_body in files:
-            self.logger.info('Processing attachment from %s: "%s"' % (
-                supplier.name, file_name))
-            self.logger.info("file contents %s", file_content)
+            self.logger.info('Processing attachment from %s: "%s" of size: %s' % (
+                supplier.name, file_name, len(file_content)))
             self._quote_dao.begin()
             try:
                 quote_parser = self._process_quote_file(
