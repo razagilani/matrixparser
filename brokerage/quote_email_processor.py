@@ -312,14 +312,14 @@ class QuoteEmailProcessor(object):
         self.logger.info('Matched email with supplier: %s' % supplier.name)
 
         body = get_body(message)
-        if body:
-            files = [(subject, body, True)] + get_attachments(message)
-            self.logger.info('Found email body in message for supplier:'
-                             ' %s' % supplier.name)
-        else:
-            self.logger.info('Extracting attachments from message for '
+        # if body:
+        #     files = [(subject, body, True)] + get_attachments(message)
+        #     self.logger.info('Found email body in message for supplier:'
+        #                      ' %s' % supplier.name)
+        # else:
+        self.logger.info('Extracting attachments from message for '
                              'supplier: %s' % supplier.name)
-            files = get_attachments(message)
+        files = get_attachments(message)
 
         # since an exception when processing one file causes that file to be
         # skipped, but other files are still processed, error messages must
