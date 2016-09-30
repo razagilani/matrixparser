@@ -57,6 +57,7 @@
     - "matrix-spark"
     - "matrix-source"
     - "matrix-engie"
+    - "matrix-agera"
 
 - name : restart Gunicorn service
   become: true
