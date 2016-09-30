@@ -323,8 +323,8 @@ class QuoteEmailProcessor(object):
         self.logger.info('Found %s attachments', len(files))
         count = 0
         for file_name, file_content, match_email_body in files:
-            count +=1
-            self.logger.info('File %s name: %s', (count, file_name))
+            count += 1
+            self.logger.info('File %s name: %s' % (count, file_name))
 
         # since an exception when processing one file causes that file to be
         # skipped, but other files are still processed, error messages must
