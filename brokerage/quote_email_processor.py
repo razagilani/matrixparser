@@ -320,6 +320,7 @@ class QuoteEmailProcessor(object):
             self.logger.info('Extracting attachments from message for '
                              'supplier: %s' % supplier.name)
             files = get_attachments(message)
+        self.logger.info('Found %s attachments', len(files))
 
         # since an exception when processing one file causes that file to be
         # skipped, but other files are still processed, error messages must
