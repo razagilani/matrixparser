@@ -321,6 +321,8 @@ class QuoteEmailProcessor(object):
                              'supplier: %s' % supplier.name)
             files = get_attachments(message)
         self.logger.info('Found %s attachments', len(files))
+        for count, file_name, _, _ in enumerate(files):
+            self.logger.info('File %s name: %s', (count, file_name))
 
         # since an exception when processing one file causes that file to be
         # skipped, but other files are still processed, error messages must
