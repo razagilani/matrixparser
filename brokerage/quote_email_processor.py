@@ -312,14 +312,14 @@ class QuoteEmailProcessor(object):
         self.logger.info('Matched email with supplier: %s' % supplier.name)
 
         body = get_body(message)
-        if body:
-            files = [(subject, body, True)] + get_attachments(message)
-            self.logger.info('Found email body in message for supplier:'
-                             ' %s' % supplier.name)
-        else:
-            self.logger.info('Extracting attachments from message for '
+        #if body:
+        #    files = [(subject, body, True)] + get_attachments(message)
+        #    self.logger.info('Found email body in message for supplier:'
+        #                     ' %s' % supplier.name)
+        #else:
+        self.logger.info('Extracting attachments from message for '
                              'supplier: %s' % supplier.name)
-            files = get_attachments(message)
+        files = get_attachments(message)
         self.logger.info('Found %s attachments', len(files))
         count = 0
         for file_name, file_content, match_email_body in files:
