@@ -321,8 +321,9 @@ class QuoteEmailProcessor(object):
                              'supplier: %s' % supplier.name)
             files = get_attachments(message)
         self.logger.info('Found %s attachments', len(files))
-        for count, file_name, file_content, match_email_body in \
-                enumerate(files):
+        count = 0
+        for file_name, file_content, match_email_body in files:
+            count +=1
             self.logger.info('File %s name: %s', (count, file_name))
 
         # since an exception when processing one file causes that file to be
