@@ -1,6 +1,8 @@
 """This module should contain subclasses of QuoteParser for specific
 suppliers, each one in a separate file.
 """
+from brokerage.quote_parsers.agera_electric import AgeraElectricMatrixParser
+from brokerage.quote_parsers.agera_gas import AgeraGasMatrixParser
 from brokerage.quote_parsers.direct_portal import DirectPortalMatrixParser
 from brokerage.quote_parsers.source import SourceMatrixParser
 from .aep import AEPMatrixParser
@@ -48,5 +50,7 @@ CLASSES_FOR_FORMATS = {
     22: SourceMatrixParser,
     23: SuezElectricParser,
     24: DirectPortalMatrixParser,
+    25: AgeraElectricMatrixParser,
+    26: AgeraGasMatrixParser
 }
 
