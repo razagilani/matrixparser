@@ -77,9 +77,11 @@ class AgeraElectricMatrixParser(QuoteParser):
             cons_price = self.reader.get(self.SHEET, row,
                                     self.CONSOLIDATED_PRICE_COL,
                                     float)
-            non_cons_price = self.reader.get(self.SHEET, row,
-                                    self.NON_CONSOLIDATED_PRICE_COL,
-                                    float)
+
+            #non_cons_price = self.reader.get(self.SHEET, row,
+            #                        self.NON_CONSOLIDATED_PRICE_COL,
+            #                        float)
+
             yield MatrixQuote(
                 start_from=start_from, start_until=start_until,
                 term_months=term, dual_billing=False,
@@ -89,11 +91,13 @@ class AgeraElectricMatrixParser(QuoteParser):
                 service_type=ELECTRIC, file_reference='%s %s,%s,%s' % (
                     self.file_name, self.SHEET, row, self.CONSOLIDATED_PRICE_COL))
 
-            yield MatrixQuote(
-                start_from=start_from, start_until=start_until,
-                term_months=term, dual_billing=True,
-                min_volume=self.MIN_VOLUME, limit_volume = self.MAX_VOLUME,
-                rate_class_alias=rate_class_alias, price=non_cons_price,
-                valid_from=self._valid_from, valid_until=self._valid_until,
-                service_type=ELECTRIC, file_reference='%s %s,%s,%s' % (
-                    self.file_name, self.SHEET, row, self.NON_CONSOLIDATED_PRICE_COL))
+            # We only want consolidated price
+
+            # yield MatrixQuote(
+            #     start_from=start_from, start_until=start_until,
+            #     term_months=term, dual_billing=True,
+            #     min_volume=self.MIN_VOLUME, limit_volume = self.MAX_VOLUME,
+            #     rate_class_alias=rate_class_alias, price=non_cons_price,
+            #     valid_from=self._valid_from, valid_until=self._valid_until,
+            #     service_type=ELECTRIC, file_reference='%s %s,%s,%s' % (
+            #         self.file_name, self.SHEET, row, self.NON_CONSOLIDATED_PRICE_COL))
