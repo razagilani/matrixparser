@@ -1,4 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+import re
+from time import mktime, strptime
 
 from tablib import formats
 
@@ -6,8 +8,8 @@ from brokerage.model import MatrixQuote
 from brokerage.exceptions import ValidationError
 from brokerage.quote_parser import QuoteParser, SimpleCellDateGetter, \
     SpreadsheetReader
-from brokerage.validation import _assert_match
-from util.dateutils import date_to_datetime
+from brokerage.validation import _assert_match, ELECTRIC
+from util.dateutils import date_to_datetime, parse_datetime
 from util.monthmath import Month
 from util.units import unit_registry
 
@@ -19,44 +21,66 @@ class EntrustMatrixParser(QuoteParser):
     reader = SpreadsheetReader(formats.xlsx)
 
     EXPECTED_SHEET_TITLES = [
-        # 'IL - ComEd Matrix',
-        # 'OH - Duke Matrix',
-        # 'OH - Dayton Matrix',
-        # 'PA - PECO Matrix',
-        # 'PA - PPL Matrix',
-        # 'MD - BGE Matrix',
-        # 'MD - PEPCO Matrix',
-        # 'NJ - JCPL Matrix',
-        # 'NYSEG - A - Matrix',
-        # 'NYSEG - B - Matrix',
-        # 'NYSEG - C - Matrix',
-        # 'NYSEG - D - Matrix',
-        # 'NYSEG - E - Matrix',
-        # 'NYSEG - F - Matrix',
-        # 'NYSEG - G - Matrix',
-        # 'NYSEG - H - Matrix',
-        # 'NYSEG - I - Matrix',
-        # 'NY - NATGRID - A - Matrix',
-        # 'NY - NATGRID - B - Matrix',
-        # 'NY - NATGRID - C - Matrix',
-        # 'NY - NATGRID - D - Matrix',
-        # 'NY - NATGRID - E - Matrix',
-        # 'RG&E - B - Matrix',
-        # 'ConEd - H - Matrix',
-        # 'ConEd - I - Matrix',
-        # 'ConEd - J - Matrix']
+        'IL - ComEd Matrix',
+        'OH - Duke Matrix',
+        'OH - Dayton Matrix',
+        'OH - AEP OP Matrix',
+        'OH - AEP CS Matrix',
+        'OH - FE CEI Matrix',
+        'OH - FE Ohio Edison Matrix',
+        'OH - FE Toledo Edison Matrix',
+        'PA - PECO Matrix',
+        'PA - Duquesne Matrix',
+        'PA - FE MetEd Matrix',
+        'PA - FE Penelec Matrix',
+        'PA - FE WestPenn Matrix',
+        'PA - FE Penn Power Matrix',
+        'PA - PPL Matrix',
+        'MD - BGE Matrix',
+        'MD - PEPCO Matrix',
+        'NJ - JCPL Matrix',
+        'NJ - PSEG Matrix',
+        'NY - NYSEG - A Matrix',
+        'NY - NYSEG - B Matrix',
+        'NY - NYSEG - C Matrix',
+        'NY - NYSEG - D Matrix',
+        'NY - NYSEG - E Matrix',
+        'NY - NYSEG - F Matrix',
+        'NY - NYSEG - G Matrix',
+        'NY - NYSEG - H Matrix',
+        'NY - NYSEG - I Matrix',
+        'NY - NATGRID - A Matrix',
+        'NY - NATGRID - B Matrix',
+        'NY - NATGRID - C Matrix',
+        'NY - NATGRID - D Matrix',
+        'NY - NATGRID - E Matrix',
+        'NY- ConEd - H Matrix',
+        'NY- ConEd - I Matrix',
+        'NY- ConEd - J Matrix'
     ]
 
     DATE_REGEX = ('Pricing for Commercial Customers\s+'
-                 'for (\w+ \w+ \d\d?, \d\d\d\d)')
+                  'for (\w+ \w+ \d\d?, \d\d\d\d)')
+
+
+    RATE_START_ROW = 9
+    TABLE_ROWS = 18
+    ORIGINAL_TABLE_ROWS = TABLE_ROWS
+    START_DATE_COL = 3
+    NO_OF_TERM_COLS = 4
+    VOLUME_RANGE_COL = 2
+    COL_INCREMENT = 7
+    TABLE_HEIGHT = 21  # the expected number of rows in a table
+    ORIGINAL_TABLE_HEIGHT = TABLE_HEIGHT
+    UTILITY_ROW = 6
+    CHANGED_TABLE_PARMS = False
+
 
     DATE_ROW = 4
-    UTILITY_ROW = 6
     VOLUME_RANGE_ROW = 7
     TERM_ROW = 8
     QUOTE_START_ROW = 9
     START_COL = 'D'
-    UTILITY_COL = 'E'
     PRICE_START_COL = 'E'
     DATE_COL = 'F'
     ROUNDING_DIGITS = 4
@@ -73,19 +97,60 @@ class EntrustMatrixParser(QuoteParser):
 
     date_getter = SimpleCellDateGetter(0, DATE_ROW, 'F', DATE_REGEX)
 
+    def process_table(self, sheet, row, col, rate_class_alias, valid_from,
+            valid_until, min_volume, limit_volume, term_row):
+        """
+        Extracts quotes from a table
+        :param sheet: the sheet number or title
+        :param row: the starting row of the table containing quotes
+        :param col: the starting column of the table containing quotes
+        :param rate_class_alias: rate class alias for the quotes in the table
+        :param valid_from: the starting date from which the quote becomes valid
+        :param valid_until: the date at which the quotes becomes invalid
+        :param min_volume: the minimum volume for the quote
+        :param limit_volume: the maximum volume for the quote
+        :param term_row: the row at which the term of the quote is located
+        :return yield a quote object
+        """
+
+        for table_row in xrange(row, row + self.TABLE_ROWS):
+            start_from = self._reader.get(sheet, table_row,
+                                          self.START_DATE_COL, (datetime, type(None)))
+            if start_from is None:
+                # table is shorter
+                # change table rows and height
+                self.CHANGED_TABLE_PARMS = True
+                self.TABLE_ROWS = table_row - self.RATE_START_ROW
+                self.TABLE_HEIGHT = self.TABLE_ROWS + 3
+                return
+            start_until = date_to_datetime((Month(start_from) + 1).first)
+            for price_col in xrange(col + 2, col + 2 + self.NO_OF_TERM_COLS):
+                term = self._reader.get(sheet, term_row, price_col, int)
+                price = self._reader.get(sheet, table_row, price_col, (float, type(None)))
+                if price is None:
+                    continue
+                yield MatrixQuote(start_from=start_from,
+                    start_until=start_until, term_months=term,
+                    valid_from=valid_from, valid_until=valid_until,
+                    min_volume=min_volume, limit_volume=limit_volume,
+                    purchase_of_receivables=False, price=price,
+                    rate_class_alias=rate_class_alias, service_type=ELECTRIC,
+                    file_reference='%s %s,%s' % (
+                        self.file_name, sheet, table_row))
+
+
     def _validate(self):
         # EXPECTED_SHEET_TITLES and EXPECTED_CELLS are not used because
         # there are many sheets the titles change. instead check cells here.
         for sheet in self.reader.get_sheet_titles():
             for row, col, regex in [
                 (4, 'F', self.DATE_REGEX),
-                (6, 'D', 'Utility'),
-                (7, 'D', 'Annual Usage'),
-                (8, 'D', 'Term \(months\)'),
-                (9, 'C', 'Start Month'),
+                (7, 'E', 'Term \(Months\)'),
+                (8, 'D', 'Start Month')
             ]:
                 _assert_match(
                     regex, self.reader.get(sheet, row, col, basestring))
+
 
         # since only the first sheet is the official source of the date,
         # make sure all others have the same date in them
@@ -97,70 +162,42 @@ class EntrustMatrixParser(QuoteParser):
 
 
     def _process_sheet(self, sheet):
-        # could get the utility from the sheet name, but this seems better.
-        # includes utility and zone name.
-        utility = self.reader.get(sheet, self.UTILITY_ROW, self.UTILITY_COL,
-                                  basestring)
-        rate_class_alias = 'Entrust-electric-' + utility
 
-        # they spell "Annually" wrong in some columns
-        max_only_regex = r'<\s*(?P<high>[\d,]+)\s*kWh Annuall?y'
-        min_and_max_regex = (r'\s*(?P<low>[\d,]+)\s*<\s*kWh Annuall?y\s*<'
-                             r'\s*(?P<high>[\d,]+)\s*')
-        volume_ranges = [
-            self._extract_volume_range(sheet, self.VOLUME_RANGE_ROW,
-                                       self.VOLUME_RANGE_COLS[0],
-                                       max_only_regex)] + [
-            self._extract_volume_range(sheet, self.VOLUME_RANGE_ROW, col,
-                                       min_and_max_regex) for col in
-            self.VOLUME_RANGE_COLS[1:]]
-        # width of volume range block includes 4 regular columns,
-        # 2 "Sweet Spot" columns, and 1 empty space
-        first_vol_range_index = SpreadsheetReader.col_letter_to_index(
-            self.VOLUME_RANGE_COLS[0])
-        vol_range_block_width = len(self.VOLUME_RANGE_COLS) + 3
-
-        for row in xrange(self.QUOTE_START_ROW,
-                          self.reader.get_height(sheet) + 1):
-            start_from = self.reader.get(sheet, row, self.START_COL, datetime)
-            start_until = date_to_datetime((Month(start_from) + 1).first)
-
-            for col in SpreadsheetReader.column_range(
-                    self.PRICE_START_COL, self.reader.get_width(sheet),
-                    inclusive=False):
-                if col in self.SWEET_SPOT_TERM_COLS:
-                    # not a price, but the term length for the previous column
-                    continue
-                price = self.reader.get(sheet, row, col, object)
-                if price is None:
-                    # blank space
-                    continue
-
-                if col in self.SWEET_SPOT_PRICE_COLS:
-                    # this price has its term length in the next column, which
-                    # is in the corresponding position in SWEET_SPOT_TERM_COLS
-                    term_col = self.SWEET_SPOT_TERM_COLS[
-                        self.SWEET_SPOT_PRICE_COLS.index(col)]
-                    term_months = self.reader.get_matches(
-                        sheet, row, term_col, '(\d+) Months', int)
+        for table_start_row in xrange(self.RATE_START_ROW,
+                                      self._reader.get_height(sheet),
+                                      self.TABLE_HEIGHT):
+            term_row = table_start_row - 1
+            for col in xrange(self.VOLUME_RANGE_COL,
+                              self._reader.get_width(sheet),
+                              self.COL_INCREMENT):
+                volume_column = self._reader.get(sheet, table_start_row, col, object)
+                if volume_column is not None and 'kWh' in volume_column:
+                    min_volume, limit_volume = self._extract_volume_range(
+                        sheet, table_start_row, col,
+                        r'(?P<low>[\d,]+)'
+                        r'(?: - |-)(?P<high>[\d,]+)'
+                        r'(?: kWh)',
+                        expected_unit=unit_registry.kwh,
+                        target_unit=unit_registry.kwh)
+                    rate_class_alias = 'Entrust-electric-'
+                    rate_class_alias += self._reader.get(sheet,
+                                                     self.UTILITY_ROW,
+                                                     col + 2,
+                                                     basestring)
                 else:
-                    min_volume, limit_volume = volume_ranges[
-                        (col - first_vol_range_index) / vol_range_block_width]
-                    term_months = self.reader.get(
-                        sheet, self.TERM_ROW, col, int)
-
-                yield MatrixQuote(
-                    start_from=start_from, start_until=start_until,
-                    term_months=term_months, valid_from=self._valid_from,
-                    valid_until=self._valid_until,
-                    min_volume=min_volume, limit_volume=limit_volume,
-                    rate_class_alias=rate_class_alias,
-                    purchase_of_receivables=False, price=price,
-                    service_type='electric',
-                    file_reference='%s %s,%s,%s' % (
-                        self.file_name, sheet, row, col))
+                    continue
+                quotes = self.process_table(sheet, table_start_row, col,
+                                            rate_class_alias, self._valid_from,
+                                            self._valid_until, min_volume,
+                                            limit_volume, term_row)
+                for quote in quotes:
+                        yield quote
 
     def _extract_quotes(self):
         for sheet in self.reader.get_sheet_titles():
+            if self.CHANGED_TABLE_PARMS:
+                self.TABLE_HEIGHT = self.ORIGINAL_TABLE_HEIGHT
+                self.TABLE_ROWS = self.ORIGINAL_TABLE_ROWS
+                self.CHANGED_TABLE_PARMS = False
             for quote in self._process_sheet(sheet):
                 yield quote
