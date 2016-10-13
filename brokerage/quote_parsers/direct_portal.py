@@ -60,7 +60,7 @@ class DirectPortalMatrixParser(QuoteParser):
                 service_type = ELECTRIC
                 _assert_equal(unit_name, 'kwh')
                 expected_unit = target_unit = unit_registry.kWh
-                min_vol, limit_vol = 0, 750000
+                min_vol, limit_vol = 0, 1000000
             elif commodity == 'gas':
                 service_type = GAS
                 if unit_name in ('thm', 'ccf'):
@@ -70,7 +70,7 @@ class DirectPortalMatrixParser(QuoteParser):
                 else:
                     raise ValidationError('Unknown gas unit: "%s"' % unit_name)
                 target_unit = unit_registry.therm
-                min_vol, limit_vol = 0, 150000
+                min_vol, limit_vol = 0, 100000
             else:
                 raise ValidationError(
                     'Expected service type "power" or "gas", found "%s"' %

@@ -22,10 +22,10 @@ class TestDirectPortal(QuoteParserTest, TestCase):
         self.assertEqual(q.valid_until, datetime(2016, 8, 4))
         self.assertEqual(0, q.min_volume)
         if q.service_type == ELECTRIC:
-            self.assertEqual(750000, q.limit_volume)
+            self.assertEqual(1000000, q.limit_volume)
         else:
             self.assertEqual(GAS, q.service_type)
-            self.assertEqual(150000, q.limit_volume)
+            self.assertEqual(100000, q.limit_volume)
 
     def test_first(self):
         q = self.quotes[0]
