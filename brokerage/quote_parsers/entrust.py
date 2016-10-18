@@ -82,7 +82,7 @@ class EntrustMatrixParser(QuoteParser):
     QUOTE_START_ROW = 9
     START_COL = 'D'
     PRICE_START_COL = 'E'
-    DATE_COL = 'F'
+    DATE_COL = 'C'
     ROUNDING_DIGITS = 4
     # certain columns have term length in a different place
     # (indices are used instead of letters to enable comparison)
@@ -95,7 +95,7 @@ class EntrustMatrixParser(QuoteParser):
 
     EXPECTED_ENERGY_UNIT = unit_registry.kWh
 
-    date_getter = SimpleCellDateGetter(0, DATE_ROW, 'F', DATE_REGEX)
+    date_getter = SimpleCellDateGetter(0, DATE_ROW, 'C', DATE_REGEX)
 
     def process_table(self, sheet, row, col, rate_class_alias, valid_from,
             valid_until, min_volume, limit_volume, term_row):
@@ -115,7 +115,7 @@ class EntrustMatrixParser(QuoteParser):
 
         for table_row in xrange(row, row + self.TABLE_ROWS):
             start_from = self._reader.get(sheet, table_row,
-                                          self.START_DATE_COL, (datetime, type(None)))
+                                          self.START_DATE_COL, (datetime, type(None), unicode))
             if start_from is None:
                 # table is shorter
                 # change table rows and height
@@ -123,11 +123,13 @@ class EntrustMatrixParser(QuoteParser):
                 self.TABLE_ROWS = table_row - self.RATE_START_ROW
                 self.TABLE_HEIGHT = self.TABLE_ROWS + 3
                 return
+            elif isinstance(start_from, unicode):
+                return
             start_until = date_to_datetime((Month(start_from) + 1).first)
             for price_col in xrange(col + 2, col + 2 + self.NO_OF_TERM_COLS):
                 term = self._reader.get(sheet, term_row, price_col, int)
-                price = self._reader.get(sheet, table_row, price_col, (float, type(None)))
-                if price is None:
+                price = self._reader.get(sheet, table_row, price_col, (float, type(None), unicode))
+                if price is None or isinstance(price, unicode):
                     continue
                 yield MatrixQuote(start_from=start_from,
                     start_until=start_until, term_months=term,
@@ -144,7 +146,7 @@ class EntrustMatrixParser(QuoteParser):
         # there are many sheets the titles change. instead check cells here.
         for sheet in self.reader.get_sheet_titles():
             for row, col, regex in [
-                (4, 'F', self.DATE_REGEX),
+                (4, 'C', self.DATE_REGEX),
                 (7, 'E', 'Term \(Months\)'),
                 (8, 'D', 'Start Month')
             ]:
