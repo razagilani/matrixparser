@@ -8,7 +8,7 @@ from test.test_quote_parsers import QuoteParserTest
 class TestEntrust(QuoteParserTest, TestCase):
     FILE_NAME = 'Entrust Energy Commercial Matrix Pricing_10182016.xlsx'
     PARSER_CLASS = EntrustMatrixParser
-    EXPECTED_COUNT = 14764
+    EXPECTED_COUNT = 14073
 
     def test_entrust(self):
         q = self.quotes[0]
