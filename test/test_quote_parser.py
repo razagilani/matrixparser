@@ -82,7 +82,7 @@ class MatrixQuoteParsersTest(TestCase):
         DIRECTORY, 'Constellation - SMB Cost+ Matrix_Fully '
                    'Bundled_09_24_2015.xlsm')
     ENTRUST_FILE_PATH = join(
-        DIRECTORY, 'Entrust Energy Commercial Matrix Pricing - Residual - 2016 03 02.xlsx')
+        DIRECTORY, 'Entrust Energy Commercial Matrix Pricing_10182016.xlsx')
 
     GUTTMAN_DEO_FILE_PATH = join(DIRECTORY, 'Guttman', 'DEO_Matrix_02242016.xlsx')
     GUTTMAN_OH_DUKE_FILE_PATH = join(DIRECTORY, 'Guttman', 'OH_Duke_Gas_Matrix_02242016.xlsx')
@@ -445,34 +445,34 @@ class MatrixQuoteParsersTest(TestCase):
         self.assertEqual(0, parser.get_count())
 
         quotes = list(parser.extract_quotes())
-        self.assertEqual(3212, len(quotes))
+        self.assertEqual(14073, len(quotes))
 
         for quote in quotes:
             quote.validate()
 
         q = quotes[0]
-        self.assertEqual(datetime(2016, 3, 1), q.start_from)
-        self.assertEqual(datetime(2016, 4, 1), q.start_until)
+        self.assertEqual(datetime(2016, 10, 1), q.start_from)
+        self.assertEqual(datetime(2016, 11, 1), q.start_until)
         self.assertEqual(datetime.utcnow().date(), q.date_received.date())
         self.assertEqual(12, q.term_months)
         self.assertEqual(0, q.min_volume)
-        self.assertEqual(15000, q.limit_volume)
-        self.assertEqual('Entrust-electric-Com Ed', q.rate_class_alias)
-        self.assertEqual(0.069, q.price)
+        self.assertEqual(100000, q.limit_volume)
+        self.assertEqual('Entrust-electric-Commonwealth Edison (C28) (0 -100 kw)', q.rate_class_alias)
+        self.assertEqual(0.0658, q.price)
         self.assertEqual(q.service_type, ELECTRIC)
 
         # since this one is especially complicated and also missed a row,
         # check the last quote too. (this also checks the "sweet spot"
         # columns which work differently from the other ones)
         q = quotes[-1]
-        self.assertEqual(datetime(2017, 8, 1), q.start_from)
-        self.assertEqual(datetime(2017, 9, 1), q.start_until)
+        self.assertEqual(datetime(2018, 3, 1), q.start_from)
+        self.assertEqual(datetime(2018, 4, 1), q.start_until)
         self.assertEqual(datetime.utcnow().date(), q.date_received.date())
         self.assertEqual(24, q.term_months)
-        self.assertEqual(3e5, q.min_volume)
+        self.assertEqual(600000, q.min_volume)
         self.assertEqual(1e6, q.limit_volume)
-        self.assertEqual('Entrust-electric-ConEd Zone J', q.rate_class_alias)
-        self.assertEqual(0.0771, q.price)
+        self.assertEqual('Entrust-electric-Consolidated Edison - Zone J', q.rate_class_alias)
+        self.assertEqual(0.0687, q.price)
         self.assertEqual(q.service_type, ELECTRIC)
 
     def test_spark(self):
