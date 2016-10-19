@@ -22,7 +22,7 @@ class AgeraElectricTest(QuoteParserTest, TestCase):
     def test_agera_gas(self):
         q = self.quotes[0]
         self.assertEqual(datetime(2016, 9, 1), q.start_from)
-        self.assertEqual(datetime(2017, 8, 31), q.start_until)
+        self.assertEqual(datetime(2016, 10, 1), q.start_until)
         self.assertEqual(12, q.term_months)
         self.assertEqual(datetime(2016, 9, 7), q.valid_from)
         self.assertEqual(datetime(2016, 9, 15), q.valid_until)
@@ -32,10 +32,11 @@ class AgeraElectricTest(QuoteParserTest, TestCase):
         self.assertEqual(0.056600000000000004, q.price)
         self.assertEqual(q.service_type, ELECTRIC)
         self.assertEqual(q.dual_billing, False)
+        self.assertEqual(datetime.utcnow().date(), q.date_received.date())
 
         q1 = self.quotes[1]
         self.assertEqual(datetime(2016, 9, 1), q1.start_from)
-        self.assertEqual(datetime(2018, 2, 28), q1.start_until)
+        self.assertEqual(datetime(2016, 10, 1), q1.start_until)
         self.assertEqual(18, q1.term_months)
         self.assertEqual(datetime(2016, 9, 7), q1.valid_from)
         self.assertEqual(datetime(2016, 9, 15), q1.valid_until)
@@ -45,4 +46,5 @@ class AgeraElectricTest(QuoteParserTest, TestCase):
         self.assertEqual(0.058600000000000006, q1.price)
         self.assertEqual(q1.service_type, ELECTRIC)
         self.assertEqual(q1.dual_billing, False)
+        self.assertEqual(datetime.utcnow().date(), q1.date_received.date())
 

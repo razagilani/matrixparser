@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from monthdelta import monthdelta
 
 from tablib import formats
 
@@ -69,8 +70,8 @@ class AgeraElectricMatrixParser(QuoteParser):
             start_from = parse_datetime(self.reader.get(self.SHEET, row, self.START_COL,
                                          basestring))
 
-            start_until = parse_datetime(self.reader.get(self.SHEET, row, self.END_COL,
-                                         basestring))
+            start_until = start_from + monthdelta(1)
+            start_until = start_until.replace(day=1)
 
             term = self.reader.get(self.SHEET, row, self.TERM_COL,
                                         int)
