@@ -28,7 +28,7 @@ class AgeraGasMatrixParser(QuoteParser):
         (SHEET, 1, 'F', 'price'),
         (SHEET, 1, 'G', 'valid_from'),
         (SHEET, 1, 'H', 'valid_until'),
-        (SHEET, 1, 'I', 'Minimum_annual_volume'),
+        (SHEET, 1, 'I', 'minimum_annual_volume'),
         (SHEET, 1, 'J', 'maximum_annual_volume')
     ]
     # TODO
