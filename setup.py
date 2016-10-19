@@ -22,6 +22,7 @@ install_requires = [
     'Flask-OAuth==0.12',
     'Flask-Principal==0.4.0',
     'Flask-KVSession==0.6.2',
+    'MonthDelta==0.9.1',
     'pdfminer==20140328',
     # pillow is a replacement for PIL, a dependency of reportlab that is not
     # maintained anymore. we used to install a copy of it that was available at
