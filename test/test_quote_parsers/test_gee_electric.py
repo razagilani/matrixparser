@@ -51,20 +51,20 @@ class TestGeeElectricNJ(QuoteParserTest, TestCase):
 
     def test_first(self):
         q_nj_0 = self.quotes[0]
-        self.assertEqual(datetime(2016, 8, 29), q_nj_0.valid_from)
-        self.assertEqual(datetime(2016, 8, 30), q_nj_0.valid_until)
-        self.assertEqual(datetime(2016, 9, 1), q_nj_0.start_from)
-        self.assertEqual(datetime(2016, 10, 1), q_nj_0.start_until)
+        self.assertEqual(datetime(2016, 10, 27), q_nj_0.valid_from)
+        self.assertEqual(datetime(2016, 10, 28), q_nj_0.valid_until)
+        self.assertEqual(datetime(2016, 11, 1), q_nj_0.start_from)
+        self.assertEqual(datetime(2016, 12, 1), q_nj_0.start_until)
         self.assertEqual(6, q_nj_0.term_months)
-        self.assertAlmostEqual(0.10543, q_nj_0.price, delta=0.000001)
+        self.assertAlmostEqual(0.10439, q_nj_0.price, delta=0.000001)
         self.assertEqual(q_nj_0.service_type, ELECTRIC)
 
     def test_last(self):
         q_nj_l = self.quotes[-1]
-        self.assertEqual(datetime(2017, 1, 1), q_nj_l.start_from)
-        self.assertEqual(datetime(2017, 2, 1), q_nj_l.start_until)
-        self.assertEqual(10, q_nj_l.term_months)
-        self.assertAlmostEqual(0.07238, q_nj_l.price, delta=0.000001)
+        self.assertEqual(datetime(2017, 4, 1), q_nj_l.start_from)
+        self.assertEqual(datetime(2017, 5, 1), q_nj_l.start_until)
+        self.assertEqual(7, q_nj_l.term_months)
+        self.assertAlmostEqual(0.06853000000000001, q_nj_l.price, delta=0.000001)
         self.assertEqual(q_nj_l.service_type, ELECTRIC)
 
 
@@ -77,31 +77,31 @@ class TestGeeElectricMA(QuoteParserTest, TestCase):
 
     def test_first(self):
         q_ma_0 = self.quotes[0]
-        self.assertEqual(datetime(2016, 8, 29), q_ma_0.valid_from)
-        self.assertEqual(datetime(2016, 8, 30), q_ma_0.valid_until)
-        self.assertEqual(datetime(2016, 8, 1), q_ma_0.start_from)
-        self.assertEqual(datetime(2016, 9, 1), q_ma_0.start_until)
+        self.assertEqual(datetime(2016, 10, 27), q_ma_0.valid_from)
+        self.assertEqual(datetime(2016, 10, 28), q_ma_0.valid_until)
+        self.assertEqual(datetime(2016, 11, 1), q_ma_0.start_from)
+        self.assertEqual(datetime(2016, 12, 1), q_ma_0.start_until)
         self.assertEqual(6, q_ma_0.term_months)
-        self.assertAlmostEqual(0.09412, q_ma_0.price, delta=0.000001)
+        self.assertAlmostEqual(0.09284, q_ma_0.price, delta=0.000001)
         self.assertEqual(q_ma_0.service_type, ELECTRIC)
 
     def test_2nd_last(self):
         q_ma_l = self.quotes[-2]
-        self.assertEqual(datetime(2016, 8, 29), q_ma_l.valid_from)
-        self.assertEqual(datetime(2016, 8, 30), q_ma_l.valid_until)
-        self.assertEqual(datetime(2017, 1, 1), q_ma_l.start_from)
-        self.assertEqual(datetime(2017, 2, 1), q_ma_l.start_until)
+        self.assertEqual(datetime(2016, 10, 27), q_ma_l.valid_from)
+        self.assertEqual(datetime(2016, 10, 28), q_ma_l.valid_until)
+        self.assertEqual(datetime(2017, 4, 1), q_ma_l.start_from)
+        self.assertEqual(datetime(2017, 5, 1), q_ma_l.start_until)
         self.assertEqual(24, q_ma_l.term_months)
         self.assertEqual(500000, q_ma_l.min_volume)
         self.assertEqual(999999, q_ma_l.limit_volume)
-        self.assertAlmostEqual(0.088, q_ma_l.price, delta=0.000001)
+        self.assertAlmostEqual(0.0936, q_ma_l.price, delta=0.000001)
         self.assertEqual(q_ma_l.service_type, ELECTRIC)
 
     def test_last(self):
         q_ma_l = self.quotes[-1]
-        self.assertEqual(datetime(2016, 8, 1), q_ma_l.start_from)
-        self.assertEqual(datetime(2016, 9, 1), q_ma_l.start_until)
+        self.assertEqual(datetime(2017, 3, 1), q_ma_l.start_from)
+        self.assertEqual(datetime(2017, 4, 1), q_ma_l.start_until)
         self.assertEqual(6, q_ma_l.term_months)
-        self.assertAlmostEqual(0.07629, q_ma_l.price, delta=0.000001)
+        self.assertAlmostEqual(0.0781, q_ma_l.price, delta=0.000001)
         self.assertEqual(q_ma_l.service_type, ELECTRIC)
 
