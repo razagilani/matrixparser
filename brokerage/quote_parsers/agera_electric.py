@@ -22,7 +22,7 @@ class AgeraElectricMatrixParser(QuoteParser):
     ]
     SHEET = 'Matrix'
 
-    HEADER_ROW = 14
+    HEADER_ROW = 17
 
     EXPECTED_CELLS = [
         (SHEET, 10, 'A', 'I.The following state includes GRT: PA'),
@@ -30,8 +30,8 @@ class AgeraElectricMatrixParser(QuoteParser):
         #(SHEET, 11, 'D', 'Total Add-On $/kWh'),
         #(SHEET, 11, 'A', 'I.The following state includes SUT: NJ'),
         #(SHEET, 12, 'A', 'II.All prices are quoted in $/kWh'),
-        (SHEET, 13, 'F', "Dual Billing"),
-        (SHEET, 13, 'J', "Consolidated Billing"),
+        (SHEET, 16, 'F', "Dual Billing"),
+        (SHEET, 16, 'J', "Consolidated Billing"),
         (SHEET, HEADER_ROW, 'A', 'START_DATE'),
         (SHEET, HEADER_ROW, 'B', 'END_DATE'),
         (SHEET, HEADER_ROW, 'C', 'TERM'),
@@ -49,7 +49,7 @@ class AgeraElectricMatrixParser(QuoteParser):
 
     date_getter = FileNameDateGetter()
 
-    QUOTE_START_ROW = 15
+    QUOTE_START_ROW = 18
     RATE_CLASS_ALIAS_COLS = 'D'
     START_COL = 'A'
     END_COL = 'B'
@@ -63,7 +63,7 @@ class AgeraElectricMatrixParser(QuoteParser):
 
     def _extract_quotes(self):
         for row in xrange(self.QUOTE_START_ROW, self.reader.get_height(
-                self.SHEET)):
+                self.SHEET) + 1):
             rate_class_alias = 'Agera-Electric-' + '-'.join(
                     self.reader.get(self.SHEET, row, col, basestring) for col in
                     self.RATE_CLASS_ALIAS_COLS)
