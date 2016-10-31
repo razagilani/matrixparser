@@ -273,6 +273,8 @@ class GEEMatrixParser(QuoteParser):
                         try:
                             quote = GEEPriceQuote(self, sheet, price_row,
                                 price_col, is_onr_sheet).evaluate()
+                            if quote.term_months == 0:
+                                continue
                         except ValidationError as e:
                             continue
 
