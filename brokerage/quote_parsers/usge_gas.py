@@ -33,6 +33,7 @@ class USGEGasMatrixParser(QuoteParser):
     LDC_COL = 'A'
     CUSTOMER_TYPE_COL = 'B'
     RATE_CLASS_COL = 'C'
+    UOM_COL = 'E'
 
     EXPECTED_SHEET_TITLES = [
         'KY',
@@ -89,7 +90,10 @@ class USGEGasMatrixParser(QuoteParser):
                                           (basestring, type(None)))
                 if utility is None:
                     continue
-
+                uom = self.reader.get(sheet, row, self.UOM_COL,
+                                      (basestring, type(None)))
+                if uom == 'NYMEX plus':
+                    continue
                 ldc = self.reader.get(sheet, row, self.LDC_COL,
                                       (basestring, type(None)))
                 customer_type = self.reader.get(
