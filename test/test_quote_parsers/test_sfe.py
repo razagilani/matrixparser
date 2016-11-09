@@ -15,7 +15,7 @@ class TestSFE(QuoteParserTest, TestCase):
     def check_every_quote(self, q):
         # 12 AM, 10 AM EDT
         self.assertEqual(datetime(2016, 4, 29, 4), q.valid_from)
-        self.assertEqual(datetime(2016, 5, 2, 14), q.valid_until)
+        self.assertEqual(datetime(2016, 4, 30, 8), q.valid_until)
 
     def test_first(self):
         q = self.quotes[0]

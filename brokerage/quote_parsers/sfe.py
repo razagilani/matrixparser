@@ -100,8 +100,8 @@ class SFEMatrixParser(QuoteParser):
         else:
             validity_days = 1
         valid_until = UTC.normalize(
-            (zone.localize(valid_from) + timedelta(days=validity_days))
-                .replace(hour=10)).replace(tzinfo=None)
+            (zone.localize(valid_from) + timedelta(days=1))
+                ).replace(tzinfo=None)
 
         term_lengths = [
             self.reader.get_matches(0, self.HEADER_ROW, col, '(\d+) mth', int)
