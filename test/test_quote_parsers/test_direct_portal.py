@@ -33,7 +33,7 @@ class TestDirectPortal(QuoteParserTest, TestCase):
                          q.rate_class_alias)
         self.assertEqual(q.term_months, 12)
         self.assertEqual(q.min_volume, 0)
-        self.assertEqual(q.price, .0759)
+        self.assertEqual(q.price, 0.07189999999999999)
         self.assertEqual(ELECTRIC, q.service_type)
 
         # TODO: start period should really be 4 months long
@@ -49,28 +49,28 @@ class TestDirectPortal(QuoteParserTest, TestCase):
                          q.rate_class_alias)
         self.assertEqual(q.term_months, 12)
         self.assertEqual(q.min_volume, 0)
-        self.assertEqual(q.price, .0759)
+        self.assertEqual(q.price, 0.07189999999999999)
         self.assertEqual(ELECTRIC, q.service_type)
 
     def test_gas_therm(self):
         # first gas quote: unit is therm
         q = next(
             quote for quote in self.quotes if '10,F' in quote.file_reference)
-        self.assertEqual(0.449, q.price)
+        self.assertEqual(0.40900000000000003, q.price)
         self.assertEqual(GAS, q.service_type)
 
     def test_gas_mcf(self):
         # first gas quote whose unit is mcf; price must be converted to $/therm
         q = next(
             quote for quote in self.quotes if '48,F' in quote.file_reference)
-        self.assertEqual(0.379, q.price)
+        self.assertEqual(0.375, q.price)
         self.assertEqual(GAS, q.service_type)
 
     def test_gas_ccf(self):
         # first gas quote whose unit is ccf; price must be converted to $/therm
         q = next(
             quote for quote in self.quotes if '52,F' in quote.file_reference)
-        self.assertEqual(0.379, q.price)
+        self.assertEqual(0.339, q.price)
         self.assertEqual(GAS, q.service_type)
 
     def test_last(self):
@@ -78,5 +78,5 @@ class TestDirectPortal(QuoteParserTest, TestCase):
         self.assertEqual(q.term_months, 24)
         self.assertEqual('Direct Energy Small Business-electric-RI-RHE-',
                          q.rate_class_alias)
-        self.assertEqual(q.price, .0879)
+        self.assertEqual(q.price, .0839)
         self.assertEqual(ELECTRIC, q.service_type)

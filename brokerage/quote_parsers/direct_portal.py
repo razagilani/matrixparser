@@ -24,6 +24,9 @@ class DirectPortalMatrixParser(QuoteParser):
     TERM_COL = 'E'
     PRICE_COL = 'F'
     UNIT_COL = 'G'
+    KWH_SUBTRACT_AMOUNT = 0.004
+    MCF_SUBTRACT_AMOUNT = 0.4
+    THM_SUBTRACT_AMOUNT = .04
 
     EXPECTED_SHEET_TITLES = ['Prices', 'Utility Abbreviations']
     EXPECTED_CELLS = [
@@ -59,14 +62,17 @@ class DirectPortalMatrixParser(QuoteParser):
             if commodity == 'power':
                 service_type = ELECTRIC
                 _assert_equal(unit_name, 'kwh')
+                subtract_amount = self.KWH_SUBTRACT_AMOUNT
                 expected_unit = target_unit = unit_registry.kWh
                 min_vol, limit_vol = 0, 1000000
             elif commodity == 'gas':
                 service_type = GAS
                 if unit_name in ('thm', 'ccf'):
                     expected_unit = unit_registry.therm
+                    subtract_amount = self.THM_SUBTRACT_AMOUNT
                 elif unit_name == 'mcf':
                     expected_unit = unit_registry.therm * 10
+                    #subtract_amount = self.MCF_SUBTRACT_AMOUNT
                 else:
                     raise ValidationError('Unknown gas unit: "%s"' % unit_name)
                 target_unit = unit_registry.therm
@@ -82,9 +88,9 @@ class DirectPortalMatrixParser(QuoteParser):
             rca = '-'.join(
                 [rca_prefix] + ['' if x is None else x for x in rca_data])
             term = self.reader.get(0, row, self.TERM_COL, int)
-            price = self.reader.get(0, row, self.PRICE_COL, float) * \
+            price = self.reader.get(0, row, self.PRICE_COL, float) *\
                     float(target_unit / expected_unit)
-
+            price = price - subtract_amount
             # TODO: quotes are temporarily duplicated 4 times as a workaround
             # for a bug where Team Portal cannot show quotes that started
             # before the current month
