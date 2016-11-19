@@ -22,7 +22,7 @@ class SourceMatrixParser(QuoteParser):
     VOLUME_RANGE_COL = 'E'
     PRICE_START_COL = 'F'
 
-    SHEET = 0 # CSV has only one sheet
+    SHEET = 0  # CSV has only one sheet
 
     EXPECTED_CELLS = [
         (SHEET, HEADER_ROW, 'A', 'Date'),
@@ -60,7 +60,7 @@ class SourceMatrixParser(QuoteParser):
                 expected_unit=unit_registry.kWh)
 
             for col in self.reader.column_range(
-                    self.PRICE_START_COL, self.reader.get_width(self.SHEET)):
+                    self.PRICE_START_COL, self.reader.get_width(self.SHEET) -1 ):
                 # blank header means end
                 if self.reader.get(
                         self.SHEET, self.HEADER_ROW, col, basestring) == '':
