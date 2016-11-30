@@ -27,6 +27,7 @@ class DirectPortalMatrixParser(QuoteParser):
     KWH_SUBTRACT_AMOUNT = 0.004
     MCF_SUBTRACT_AMOUNT = 0.4
     THM_SUBTRACT_AMOUNT = .04
+    SHEET = 'Prices'
 
     SHEET = 'Prices'
     EXPECTED_SHEET_TITLES = ['Prices', 'Utility Abbreviations']
