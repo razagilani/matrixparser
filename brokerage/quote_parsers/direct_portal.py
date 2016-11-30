@@ -29,17 +29,20 @@ class DirectPortalMatrixParser(QuoteParser):
     THM_SUBTRACT_AMOUNT = .04
     SHEET = 'Prices'
 
+    SHEET = 'Prices'
     EXPECTED_SHEET_TITLES = ['Prices', 'Utility Abbreviations']
     EXPECTED_CELLS = [
-        (0, HEADER_ROW, 'A', 'Commodity'),
-        (0, HEADER_ROW, 'B', 'State'),
-        (0, HEADER_ROW, 'C', 'LDC'),
-        (0, HEADER_ROW, 'D', 'Zone'),
-        (0, HEADER_ROW, 'E', 'Term'),
-        (0, HEADER_ROW, 'F', 'Rate Amt'),
-        (0, HEADER_ROW, 'G', 'Unit'),
-        (0, HEADER_ROW, 'H', 'Cancel Fee'),
+        (SHEET, HEADER_ROW, 'A', 'Commodity'),
+        (SHEET, HEADER_ROW, 'B', 'State'),
+        (SHEET, HEADER_ROW, 'C', 'LDC'),
+        (SHEET, HEADER_ROW, 'D', 'Zone'),
+        (SHEET, HEADER_ROW, 'E', 'Term'),
+        (SHEET, HEADER_ROW, 'F', 'Rate Amt'),
+        (SHEET, HEADER_ROW, 'G', 'Unit'),
+        (SHEET, HEADER_ROW, 'H', 'Cancel Fee'),
     ]
+
+
 
     date_getter = FileNameDateGetter()
 
