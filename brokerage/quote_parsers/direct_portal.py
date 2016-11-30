@@ -28,17 +28,20 @@ class DirectPortalMatrixParser(QuoteParser):
     MCF_SUBTRACT_AMOUNT = 0.4
     THM_SUBTRACT_AMOUNT = .04
 
+    SHEET = 'Prices'
     EXPECTED_SHEET_TITLES = ['Prices', 'Utility Abbreviations']
     EXPECTED_CELLS = [
-        (0, HEADER_ROW, 'A', 'Commodity'),
-        (0, HEADER_ROW, 'B', 'State'),
-        (0, HEADER_ROW, 'C', 'LDC'),
-        (0, HEADER_ROW, 'D', 'Zone'),
-        (0, HEADER_ROW, 'E', 'Term'),
-        (0, HEADER_ROW, 'F', 'Rate Amt'),
-        (0, HEADER_ROW, 'G', 'Unit'),
-        (0, HEADER_ROW, 'H', 'Cancel Fee'),
+        (SHEET, HEADER_ROW, 'A', 'Commodity'),
+        (SHEET, HEADER_ROW, 'B', 'State'),
+        (SHEET, HEADER_ROW, 'C', 'LDC'),
+        (SHEET, HEADER_ROW, 'D', 'Zone'),
+        (SHEET, HEADER_ROW, 'E', 'Term'),
+        (SHEET, HEADER_ROW, 'F', 'Rate Amt'),
+        (SHEET, HEADER_ROW, 'G', 'Unit'),
+        (SHEET, HEADER_ROW, 'H', 'Cancel Fee'),
     ]
+
+
 
     date_getter = FileNameDateGetter()
 
@@ -51,13 +54,13 @@ class DirectPortalMatrixParser(QuoteParser):
         # described here: https://nextility.atlassian.net/browse/MATRIX-89
         self._valid_until = self._valid_from + timedelta(days=15)
 
-        for row in xrange(self.QUOTE_START_ROW, self.reader.get_height(0) + 1):
+        for row in xrange(self.QUOTE_START_ROW, self.reader.get_height(self.SHEET) + 1):
 
             # different volume limits and interpretation of price unit for
             # electric and gas quotes. also different gas quotes have
             # different units.
-            commodity = self.reader.get(0, row, 'A', basestring).lower()
-            unit_name = self.reader.get(0, row, self.UNIT_COL,
+            commodity = self.reader.get(self.SHEET, row, 'A', basestring).lower()
+            unit_name = self.reader.get(self.SHEET, row, self.UNIT_COL,
                                         basestring).lower()
             if commodity == 'power':
                 service_type = ELECTRIC
@@ -83,12 +86,12 @@ class DirectPortalMatrixParser(QuoteParser):
                     commodity)
 
             rca_prefix = 'Direct Energy Small Business-' + service_type.lower()
-            rca_data = [self.reader.get(0, row, col, object) for col in
+            rca_data = [self.reader.get(self.SHEET, row, col, object) for col in
                         self.RCA_COLS]
             rca = '-'.join(
                 [rca_prefix] + ['' if x is None else x for x in rca_data])
-            term = self.reader.get(0, row, self.TERM_COL, int)
-            price = self.reader.get(0, row, self.PRICE_COL, float) *\
+            term = self.reader.get(self.SHEET, row, self.TERM_COL, int)
+            price = self.reader.get(self.SHEET, row, self.PRICE_COL, float) *\
                     float(target_unit / expected_unit)
             price = price - subtract_amount
             # TODO: quotes are temporarily duplicated 4 times as a workaround
