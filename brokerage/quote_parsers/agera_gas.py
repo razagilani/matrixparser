@@ -47,6 +47,7 @@ class AgeraGasMatrixParser(QuoteParser):
     VALID_FROM = 'G'
     VALID_UNTIL = 'H'
     BILLING_TYPE = 'C'
+    WEDNESDAY = 2 # datetime.weekday() uses 2 for Wednesday
 
     def _extract_quotes(self):
         for row in xrange(self.QUOTE_START_ROW, self.reader.get_height(
@@ -60,9 +61,11 @@ class AgeraGasMatrixParser(QuoteParser):
             start_until = start_from + timedelta(days=1)
             valid_from = parse_datetime(self.reader.get(self.SHEET, row, self.VALID_FROM,
                                          basestring))
-
+            week_of_day = valid_from.weekday()
+            valid_from = valid_from + timedelta(days=(self.WEDNESDAY - week_of_day))
             valid_until = parse_datetime(self.reader.get(self.SHEET, row, self.VALID_UNTIL,
                                           basestring))
+            valid_until = valid_until + timedelta(days=(self.WEDNESDAY - week_of_day + 7))
 
             min_volume = self.reader.get_matches(self.SHEET, row, self.MIN_VOLUME_COL,
                                          r'\s*\$?(.+)\s*', float)
