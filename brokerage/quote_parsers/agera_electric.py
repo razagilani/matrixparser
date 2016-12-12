@@ -59,6 +59,7 @@ class AgeraElectricMatrixParser(QuoteParser):
     CONSOLIDATED_PRICE_COL = 'J'
     MAX_VOLUME = 2000000
     MIN_VOLUME = 0
+    WEDNESDAY = 2 # datetime.weekday() uses 2 for Wednesday
 
 
     def _extract_quotes(self):
@@ -79,6 +80,11 @@ class AgeraElectricMatrixParser(QuoteParser):
                                     self.CONSOLIDATED_PRICE_COL,
                                     float)
 
+            week_of_day = self._valid_from.weekday()
+            valid_from = self._valid_from + timedelta(days=(self.WEDNESDAY - week_of_day))
+
+            valid_until = valid_from + timedelta(days=7)
+
             #non_cons_price = self.reader.get(self.SHEET, row,
             #                        self.NON_CONSOLIDATED_PRICE_COL,
             #                        float)
@@ -88,7 +94,7 @@ class AgeraElectricMatrixParser(QuoteParser):
                 term_months=term, dual_billing=False,
                 min_volume=self.MIN_VOLUME, limit_volume = self.MAX_VOLUME,
                 rate_class_alias=rate_class_alias, price=cons_price,
-                valid_from=self._valid_from, valid_until=self._valid_until,
+                valid_from=valid_from, valid_until=valid_until,
                 service_type=ELECTRIC, file_reference='%s %s,%s,%s' % (
                     self.file_name, self.SHEET, row, self.CONSOLIDATED_PRICE_COL))
 
