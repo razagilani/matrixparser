@@ -21,6 +21,7 @@ class SourceMatrixParser(QuoteParser):
     START_COL = 'D'
     VOLUME_RANGE_COL = 'E'
     PRICE_START_COL = 'F'
+    TERMS = [12, 18, 24, 30, 36]
 
     SHEET = 0  # CSV has only one sheet
 
@@ -67,6 +68,8 @@ class SourceMatrixParser(QuoteParser):
                     break
                 term = self.reader.get_matches(
                     self.SHEET, self.HEADER_ROW, col, '(\d+)', int)
+                if term not in self.TERMS:
+                    continue
 
                 if re.match(r'.*N\/A.*',
                             self.reader.get(self.SHEET, row, col, basestring)):
