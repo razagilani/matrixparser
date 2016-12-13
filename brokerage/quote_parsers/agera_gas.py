@@ -63,9 +63,8 @@ class AgeraGasMatrixParser(QuoteParser):
                                          basestring))
             week_of_day = valid_from.weekday()
             valid_from = valid_from + timedelta(days=(self.WEDNESDAY - week_of_day))
-            valid_until = parse_datetime(self.reader.get(self.SHEET, row, self.VALID_UNTIL,
-                                          basestring))
-            valid_until = valid_until + timedelta(days=(self.WEDNESDAY - week_of_day + 7))
+
+            valid_until = valid_from + timedelta(days=7)
 
             min_volume = self.reader.get_matches(self.SHEET, row, self.MIN_VOLUME_COL,
                                          r'\s*\$?(.+)\s*', float)
