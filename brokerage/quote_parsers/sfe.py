@@ -20,7 +20,7 @@ class SFEMatrixParser(QuoteParser):
     NAME = 'sfe'
     reader = SpreadsheetReader(formats.xlsx)
 
-    HEADER_ROW = 21
+    HEADER_ROW = 22
     STATE_COL = 'B'
     SERVICE_TYPE_COL = 'C'
     START_DATE_COL = 'D'
@@ -33,20 +33,20 @@ class SFEMatrixParser(QuoteParser):
         'Pricing Worksheet',
     ]
     EXPECTED_CELLS = [
-        (0, 2, 'D', 'Commercial Pricing Worksheet'),
+        (0, 2, 'D', 'Commercial Pricing Matrix'),
         # broker fees must be 0--otherwise they must be subtracted from prices.
         # somehow, the 0s which should be floats are encoded as times.
         # if they are ever not 0, they might become floats.
-        (0, 8, 'B', 'Broker Fees'),
-        (0, 9, 'B',
+        (0, 6, 'B', 'Broker Fees'),
+        (0, 7, 'B',
          'Electricty - Enter fee in mils, i.e \$0.003/kWh entered as "3" mils'),
+        (0, 7, 'F', time(0, 0, 0)),
+        (0, 9, 'B', 'Natural Gas - Enter fee in \$ per therm'),
         (0, 9, 'F', time(0, 0, 0)),
-        (0, 11, 'B', 'Natural Gas - Enter fee in \$ per therm'),
-        (0, 11, 'F', time(0, 0, 0)),
 
-        (0, 18, 'B',
-         'To find your applicable rate, utilize the filters on row 21\.'),
-        (0, 19, 'B',
+        # (0, 18, 'B',
+        #  'To find your applicable rate, utilize the filters on row 21\.'),
+        (0, 20, 'B',
          'Electricity and Gas Rates - Rates shown are inclusive of above '
          'broker fee and SUT/GRT where applicable')
         # TODO...
@@ -157,7 +157,8 @@ class SFEMatrixParser(QuoteParser):
             else:
                 raise ValidationError('Volume range text "%s" did not match '
                                       'any expected pattern' % volume_text)
-
+            if min_vol > 4e6:
+                continue
             for col in self.TERM_COL_RANGE:
                 term = term_lengths[col - self.TERM_COL_RANGE[0]]
                 price = self.reader.get(0, row, col, object)
@@ -174,7 +175,11 @@ class SFEMatrixParser(QuoteParser):
                     # prices wrongly encoded as datetimes:
                     # the Excel epoch is supposed to be 1899-12-30, but using
                     # 1899-12-31 produces the same numbers shown in Excel.
-                    price = excel_datetime_to_number(price - timedelta(days=1))
+                    target = datetime(1899, 12, 30)
+                    difference = (price - target).days
+                    price = excel_datetime_to_number(price - timedelta(days=difference))
+                    if price < 0.01:
+                        continue
                 elif isinstance(price, float):
                     # rate class column shows the price unit for gas quotes
                     # priced in dollars. (if unit is not shown, assume it's
@@ -187,7 +192,6 @@ class SFEMatrixParser(QuoteParser):
                     raise ValidationError(
                         'Price at (%s, %s) has unexpected type %s: "%s"' % (
                             row, col, type(price), price))
-
                 yield MatrixQuote(
                     start_from=start_from, start_until=start_until,
                     term_months=term, valid_from=valid_from,
