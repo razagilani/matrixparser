@@ -83,7 +83,7 @@ class AgeraElectricMatrixParser(QuoteParser):
             week_of_day = self._valid_from.weekday()
             valid_from = self._valid_from + timedelta(days=(self.WEDNESDAY - week_of_day))
 
-            valid_until = valid_from + timedelta(days=7)
+            valid_until = valid_from + timedelta(days=8)
 
             #non_cons_price = self.reader.get(self.SHEET, row,
             #                        self.NON_CONSOLIDATED_PRICE_COL,
